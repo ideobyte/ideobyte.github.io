@@ -39,536 +39,489 @@
 
   body::before {
     content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      -50deg, transparent, transparent 55px,
-      rgba(200,146,42,0.06) 55px, rgba(200,146,42,0.06) 57px
-    );
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(-50deg, transparent, transparent 55px, rgba(200,146,42,0.06) 55px, rgba(200,146,42,0.06) 57px);
     pointer-events: none;
   }
-
   body::after {
     content: '';
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: radial-gradient(ellipse at 50% 0%, rgba(200,146,42,0.1) 0%, transparent 60%);
     pointer-events: none;
   }
 
-  /* ── Header ── */
-  .header {
-    text-align: center;
-    margin-bottom: 1.6rem;
-    position: relative;
-    z-index: 1;
-    animation: fadeUp 0.4s ease both;
-  }
+  .header { text-align: center; margin-bottom: 1.6rem; position: relative; z-index: 1; animation: fadeUp 0.4s ease both; }
+  .header-eyebrow { font-family: 'Bebas Neue', sans-serif; font-size: 0.53rem; letter-spacing: 0.47rem; color: var(--gold-bright); margin-bottom: 0.27rem; }
+  .header-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.27rem; letter-spacing: 0.33rem; line-height: 1; color: var(--cream); }
+  .header-date { font-size: 0.49rem; letter-spacing: 0.2rem; color: var(--cream-muted); margin-top: 0.44rem; }
+  .header-divider { width: 2.67rem; height: 2px; background: var(--gold); margin: 0.62rem auto 0; }
 
-  .header-eyebrow {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 0.53rem;
-    letter-spacing: 0.47rem;
-    color: var(--gold-bright);
-    margin-bottom: 0.27rem;
-  }
-
-  .header-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.27rem;
-    letter-spacing: 0.33rem;
-    line-height: 1;
-    color: var(--cream);
-  }
-
-  .header-date {
-    font-size: 0.49rem;
-    letter-spacing: 0.2rem;
-    color: var(--cream-muted);
-    margin-top: 0.44rem;
-  }
-
-  .header-divider {
-    width: 2.67rem;
-    height: 2px;
-    background: var(--gold);
-    margin: 0.62rem auto 0;
-  }
-
-  /* ── Grid ── */
   .grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.71rem;
-    width: 100%;
-    max-width: 73.33rem;
-    position: relative;
-    z-index: 1;
-    animation: fadeUp 0.5s ease 0.1s both;
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.71rem; width: 100%; max-width: 73.33rem;
+    position: relative; z-index: 1; animation: fadeUp 0.5s ease 0.1s both;
   }
-
   @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 520px)  { .grid { grid-template-columns: 1fr; } }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(1.07rem); } to { opacity:1; transform:translateY(0); } }
 
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(1.07rem); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+  .matchup-line { font-size: 0.44rem; letter-spacing: 0.09rem; color: var(--cream-muted); margin-top: 0.4rem; text-align: center; position: relative; z-index: 1; }
 
-  /* ── Card ── */
-  .card {
-    background: var(--brown-mid);
-    border: 2px solid var(--gold);
-    border-radius: 6px;
-    padding: 1.24rem 1.07rem 1.07rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    gap: 0.53rem;
-  }
-
-  .card-corner {
-    position: absolute;
-    width: 0.53rem;
-    height: 0.53rem;
-    border-color: var(--gold-bright);
-    border-style: solid;
-  }
-  .card-corner.tl { top: 0.31rem; left: 0.31rem;   border-width: 1.5px 0 0 1.5px; }
-  .card-corner.tr { top: 0.31rem; right: 0.31rem;  border-width: 1.5px 1.5px 0 0; }
-  .card-corner.bl { bottom: 0.31rem; left: 0.31rem;  border-width: 0 0 1.5px 1.5px; }
-  .card-corner.br { bottom: 0.31rem; right: 0.31rem; border-width: 0 1.5px 1.5px 0; }
-
-  /* ── Icon + brand ── */
-  .card-brand-block {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
-  }
-
-  .card-icon {
-    font-size: 2rem;
-    line-height: 1;
-  }
-
-  .card-brand {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.18rem;
-    color: var(--gold-bright);
-  }
-
-  .card-trigger-label {
-    font-size: 0.4rem;
-    letter-spacing: 0.2rem;
-    color: var(--cream-muted);
-    text-transform: uppercase;
-  }
-
-  .card-trigger {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 0.89rem;
-    letter-spacing: 0.09rem;
-    color: var(--cream);
-    line-height: 1.2;
-  }
-
-  .card-divider {
-    width: 100%;
-    height: 1px;
-    background: rgba(200,146,42,0.2);
-  }
-
-  /* ── Result ── */
-  .result-area {
-    width: 100%;
-    padding: 0.8rem 0.62rem;
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.27rem;
-  }
-
-  .result-area.yes     { background: rgba(126,182,72,0.12);  border: 1px solid var(--yes); }
-  .result-area.no      { background: rgba(192,57,43,0.12);   border: 1px solid var(--no); }
-  .result-area.live    { background: rgba(232,184,75,0.08);  border: 1px solid var(--live); }
-  .result-area.nogame  { background: rgba(200,146,42,0.08);  border: 1px solid var(--gold); }
-  .result-area.loading { background: transparent; border: 1px solid rgba(200,146,42,0.2); }
-
-  /* big stat number on strikeout / HR / SB cards */
-  .result-stat {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.49rem;
-    line-height: 1;
-    color: var(--gold-bright);
-  }
-
-  .result-stat-label {
-    font-size: 0.4rem;
-    letter-spacing: 0.2rem;
-    color: var(--cream-muted);
-    text-transform: uppercase;
-  }
-
-  /* win/loss label — same visual weight as the big stat number */
-  .result-game-label {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.49rem;
-    line-height: 1;
-    color: var(--gold-bright);
-    /* allow wrapping so long text doesn't overflow narrow cards */
-    word-break: break-word;
-    hyphens: auto;
-  }
-
-  .result-verdict {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.33rem;
-    letter-spacing: 0.09rem;
-    line-height: 1;
-  }
-
-  .result-verdict.yes    { color: var(--yes); }
-  .result-verdict.no     { color: var(--no); }
-  .result-verdict.live   { color: var(--live); font-size: 0.98rem; }
-  .result-verdict.nogame { color: var(--gold-pale); font-size: 0.8rem; }
-
-  .result-sub {
-    font-size: 0.44rem;
-    letter-spacing: 0.07rem;
-    color: var(--cream-muted);
-  }
-  .result-sub span { color: var(--cream); font-weight: 700; }
-
-  .live-dot {
-    display: inline-block;
-    width: 0.31rem; height: 0.31rem;
-    background: var(--live);
-    border-radius: 50%;
-    margin-right: 0.22rem;
-    animation: pulse 1.2s ease-in-out infinite;
-    vertical-align: middle;
-    position: relative;
-    top: -0.04rem;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.35; transform: scale(0.65); }
-  }
-
-  .card-reward {
-    font-size: 0.44rem;
-    letter-spacing: 0.04rem;
-    color: var(--cream-muted);
-    line-height: 1.6;
-  }
-  .card-reward a { color: var(--gold-bright); text-decoration: none; }
-  .card-reward a:hover { text-decoration: underline; }
-
-  .loading-blink {
-    font-size: 0.53rem;
-    letter-spacing: 0.2rem;
-    color: var(--gold-bright);
-    animation: blink 0.9s step-end infinite;
-    padding: 0.53rem 0;
-  }
-  @keyframes blink { 50% { opacity: 0; } }
-
-  /* ── Footer ── */
-  .footer {
-    margin-top: 1.24rem;
-    display: flex;
-    gap: 0.53rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    position: relative;
-    z-index: 1;
+  .section-divider {
+    width: 100%; max-width: 73.33rem; margin: 1.8rem 0 1.2rem;
+    position: relative; z-index: 1; display: flex; align-items: center; gap: 0.8rem;
     animation: fadeUp 0.5s ease 0.2s both;
   }
+  .section-divider-line { flex: 1; height: 1px; background: rgba(200,146,42,0.25); }
+  .section-divider-label { font-family: 'Bebas Neue', sans-serif; font-size: 0.6rem; letter-spacing: 0.4rem; color: var(--gold-bright); white-space: nowrap; }
 
-  .refresh-btn {
-    background: none;
-    border: 1px solid rgba(200,146,42,0.4);
-    color: var(--gold-bright);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.44rem;
-    letter-spacing: 0.2rem;
-    padding: 0.44rem 1.07rem;
-    cursor: pointer;
-    text-transform: uppercase;
-    border-radius: 3px;
-    transition: all 0.2s;
+  .nlwest-panel {
+    width: 100%; max-width: 73.33rem; background: var(--brown-mid);
+    border: 2px solid var(--gold); border-radius: 6px;
+    position: relative; z-index: 1; overflow: hidden;
+    animation: fadeUp 0.5s ease 0.25s both; margin-bottom: 1.6rem;
   }
-  .refresh-btn:hover { background: rgba(200,146,42,0.1); border-color: var(--gold-bright); }
+  .panel-corner { position: absolute; width: 0.53rem; height: 0.53rem; border-color: var(--gold-bright); border-style: solid; }
+  .panel-corner.tl { top:.31rem; left:.31rem;   border-width:1.5px 0 0 1.5px; }
+  .panel-corner.tr { top:.31rem; right:.31rem;  border-width:1.5px 1.5px 0 0; }
+  .panel-corner.bl { bottom:.31rem; left:.31rem;  border-width:0 0 1.5px 1.5px; }
+  .panel-corner.br { bottom:.31rem; right:.31rem; border-width:0 1.5px 1.5px 0; }
 
-  .matchup-line {
-    font-size: 0.44rem;
-    letter-spacing: 0.09rem;
-    color: var(--cream-muted);
-    margin-top: 0.27rem;
-    text-align: center;
-    position: relative;
-    z-index: 1;
-  }
+  .standings-table { width: 100%; border-collapse: collapse; }
+  .standings-table thead tr { border-bottom: 1px solid rgba(200,146,42,0.3); }
+  .standings-table th { font-size: 0.38rem; letter-spacing: 0.2rem; color: var(--cream-muted); text-transform: uppercase; padding: 0.6rem 0.8rem; text-align: left; font-weight: 400; }
+  .standings-table th.num { text-align: center; }
+  .standings-table tbody tr { border-bottom: 1px solid rgba(200,146,42,0.1); transition: background 0.15s; }
+  .standings-table tbody tr:last-child { border-bottom: none; }
+  .standings-table tbody tr:hover { background: rgba(200,146,42,0.05); }
+  .standings-table tbody tr.padres-row { background: rgba(200,146,42,0.07); }
+  .standings-table td { padding: 0.55rem 0.8rem; vertical-align: middle; }
+  .standings-table td.num { text-align: center; }
+
+  .rank-num { font-family:'Bebas Neue',sans-serif; font-size:0.6rem; color:var(--cream-muted); width:1.2rem; text-align:center; }
+  .team-name-cell { display:flex; align-items:center; gap:0.5rem; }
+  .team-abbr { font-family:'Bebas Neue',sans-serif; font-size:0.9rem; letter-spacing:0.05rem; color:var(--cream); min-width:2.2rem; }
+  .team-abbr.padres { color: var(--gold-bright); }
+  .team-full { font-size:0.62rem; color:var(--cream); letter-spacing:0.03rem; }
+  .record { font-family:'Bebas Neue',sans-serif; font-size:0.65rem; color:var(--cream); }
+  .gb  { font-family:'Bebas Neue',sans-serif; font-size:0.65rem; color:var(--cream); }
+  .pct { font-family:'Bebas Neue',sans-serif; font-size:0.65rem; color:var(--cream); }
+
+  .next-game-cell { text-align:right; min-width:11rem; padding-right:0.9rem; }
+  .game-live { display:inline-flex; align-items:center; gap:0.3rem; }
+  .live-dot { display:inline-block; width:0.31rem; height:0.31rem; background:var(--live); border-radius:50%; animation:pulse 1.2s ease-in-out infinite; flex-shrink:0; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.65)} }
+
+  /* Score line: ABB R – R ABB */
+  .game-scoreline { font-family:'Bebas Neue',sans-serif; font-size:0.72rem; color:var(--gold-bright); letter-spacing:0.06rem; }
+  .game-scoreline.final-w { color: var(--yes); }
+  .game-scoreline.final-l { color: var(--no); }
+
+  .game-sub { font-size:0.38rem; color:var(--cream-muted); letter-spacing:0.04rem; margin-top:0.1rem; }
+  .game-time { font-size:0.44rem; color:var(--cream-muted); letter-spacing:0.04rem; }
+  .no-game   { font-size:0.38rem; color:rgba(245,237,216,0.25); letter-spacing:0.04rem; }
+
+  /* Promo cards */
+  .card { background:var(--brown-mid); border:2px solid var(--gold); border-radius:6px; padding:1.24rem 1.07rem 1.07rem; display:flex; flex-direction:column; align-items:center; text-align:center; position:relative; gap:0.53rem; }
+  .card-corner { position:absolute; width:0.53rem; height:0.53rem; border-color:var(--gold-bright); border-style:solid; }
+  .card-corner.tl{top:.31rem;left:.31rem;border-width:1.5px 0 0 1.5px}
+  .card-corner.tr{top:.31rem;right:.31rem;border-width:1.5px 1.5px 0 0}
+  .card-corner.bl{bottom:.31rem;left:.31rem;border-width:0 0 1.5px 1.5px}
+  .card-corner.br{bottom:.31rem;right:.31rem;border-width:0 1.5px 1.5px 0}
+  .card-brand-block{display:flex;flex-direction:column;align-items:center;gap:0.2rem}
+  .card-icon{font-size:2rem;line-height:1}
+  .card-brand{font-family:'Bebas Neue',sans-serif;font-size:0.7rem;letter-spacing:0.18rem;color:var(--gold-bright)}
+  .card-trigger-label{font-size:0.4rem;letter-spacing:0.2rem;color:var(--cream-muted);text-transform:uppercase}
+  .card-trigger{font-family:'Bebas Neue',sans-serif;font-size:0.89rem;letter-spacing:0.09rem;color:var(--cream);line-height:1.2}
+  .card-divider{width:100%;height:1px;background:rgba(200,146,42,0.2)}
+  .result-area{width:100%;padding:0.8rem 0.62rem;border-radius:4px;display:flex;flex-direction:column;align-items:center;gap:0.27rem}
+  .result-area.yes    {background:rgba(126,182,72,0.12);border:1px solid var(--yes)}
+  .result-area.no     {background:rgba(192,57,43,0.12);border:1px solid var(--no)}
+  .result-area.live   {background:rgba(232,184,75,0.08);border:1px solid var(--live)}
+  .result-area.nogame {background:rgba(200,146,42,0.08);border:1px solid var(--gold)}
+  .result-area.loading{background:transparent;border:1px solid rgba(200,146,42,0.2)}
+  .result-stat      {font-family:'Bebas Neue',sans-serif;font-size:2.49rem;line-height:1;color:var(--gold-bright)}
+  .result-stat-label{font-size:0.4rem;letter-spacing:0.2rem;color:var(--cream-muted);text-transform:uppercase}
+  .result-game-label{font-family:'Bebas Neue',sans-serif;font-size:2.49rem;line-height:1;color:var(--gold-bright);word-break:break-word}
+  .result-verdict{font-family:'Bebas Neue',sans-serif;font-size:1.33rem;letter-spacing:0.09rem;line-height:1}
+  .result-verdict.yes   {color:var(--yes)}
+  .result-verdict.no    {color:var(--no)}
+  .result-verdict.live  {color:var(--live);font-size:0.98rem}
+  .result-verdict.nogame{color:var(--gold-pale);font-size:0.8rem}
+  .result-sub{font-size:0.44rem;letter-spacing:0.07rem;color:var(--cream-muted)}
+  .result-sub span{color:var(--cream);font-weight:700}
+  .card-reward{font-size:0.44rem;letter-spacing:0.04rem;color:var(--cream-muted);line-height:1.6}
+  .card-reward a{color:var(--gold-bright);text-decoration:none}
+  .card-reward a:hover{text-decoration:underline}
+  .loading-blink{font-size:0.53rem;letter-spacing:0.2rem;color:var(--gold-bright);animation:blink 0.9s step-end infinite;padding:0.53rem 0}
+  @keyframes blink{50%{opacity:0}}
 </style>
 </head>
 <body>
 
-<div class="header">
+<style>
+  .home-btn {
+    position: fixed;
+    top: 0.8rem;
+    left: 0.8rem;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: none;
+    border: 1px solid rgba(200,146,42,0.4);
+    color: var(--gold-bright);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.4rem;
+    letter-spacing: 0.15rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 3px;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .home-btn:hover {
+    background: rgba(200,146,42,0.1);
+    border-color: var(--gold-bright);
+  }
+</style>
+<a class="home-btn" href="index.html">← Home</a>
   <div class="header-eyebrow">San Diego Padres</div>
   <div class="header-title">Promo Tracker</div>
-  <div class="header-date" id="headerDate">Checking yesterday's game...</div>
+  <div class="header-date" id="headerDate"></div>
   <div class="header-divider"></div>
 </div>
 
 <div class="grid" id="grid"></div>
 <div class="matchup-line" id="matchupLine"></div>
 
-<div class="footer">
-  <button class="refresh-btn" onclick="render()">↺ Refresh</button>
+<div class="section-divider">
+  <div class="section-divider-line"></div>
+  <div class="section-divider-label">NL West Standings</div>
+  <div class="section-divider-line"></div>
+</div>
+
+<div class="nlwest-panel">
+  <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
+  <div class="panel-corner bl"></div><div class="panel-corner br"></div>
+  <table class="standings-table">
+    <thead>
+      <tr>
+        <th style="width:1.8rem">#</th>
+        <th>Team</th>
+        <th class="num">W</th>
+        <th class="num">L</th>
+        <th class="num">PCT</th>
+        <th class="num">GB</th>
+        <th style="text-align:right;padding-right:0.9rem">Today's Game</th>
+      </tr>
+    </thead>
+    <tbody id="standingsBody">
+      <tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--cream-muted);font-size:0.44rem">Loading standings...</td></tr>
+    </tbody>
+  </table>
 </div>
 
 <script>
-const TEAM_ID = 135;
+const PADRES_ID = 135;
+
+/* NL West — stable MLB team IDs + abbreviations (no API needed) */
+const NL_WEST = [
+  { id: 119, abbr: 'LAD', name: 'Los Angeles Dodgers'  },
+  { id: 135, abbr: 'SD',  name: 'San Diego Padres'     },
+  { id: 109, abbr: 'AZ',  name: 'Arizona Diamondbacks' },
+  { id: 137, abbr: 'SF',  name: 'San Francisco Giants' },
+  { id: 115, abbr: 'COL', name: 'Colorado Rockies'     },
+];
+
+/* Master ID → abbreviation map, seeded with all 30 teams we know */
+const ID_TO_ABBR = {
+  108:'LAA', 109:'AZ',  110:'BAL', 111:'BOS', 112:'CHC',
+  113:'CIN', 114:'CLE', 115:'COL', 116:'DET', 117:'HOU',
+  118:'KC',  119:'LAD', 120:'WSH', 121:'NYM', 133:'ATH',
+  134:'PIT', 135:'SD',  136:'SEA', 137:'SF',  138:'STL',
+  139:'TB',  140:'TEX', 141:'TOR', 142:'MIN', 143:'PHI',
+  144:'ATL', 145:'CWS', 146:'MIA', 158:'MIL', 137:'SF',
+};
+
+const NL_WEST_IDS = new Set(NL_WEST.map(t => t.id));
 
 const PROMOS = [
   {
-    id: 'strikeouts',
-    icon: '🐾',
-    brand: 'Petco',
-    trigger: 'K-9 or more strikeouts',
-    reward: '25% off your total purchase at participating Petco locations with loyalty membership. Ask for "Padres K-9 Promotion" at checkout.',
-    rewardLink: { text: 'Petco.com/PadresK9', href: 'https://www.petco.com/PadresK-9' },
-    stat: (box, side) => {
-      const ps = box.teams[side].teamStats?.pitching;
-      if (ps?.strikeOuts !== undefined) return { value: ps.strikeOuts, label: 'Strikeouts' };
-      const pitchers = box.teams[side].pitchers || [];
-      const players  = box.teams[side].players;
-      let k = 0;
-      for (const pid of pitchers) k += players[`ID${pid}`]?.stats?.pitching?.strikeOuts ?? 0;
-      return { value: k, label: 'Strikeouts' };
+    id:'strikeouts', icon:'🐾', brand:'Petco',
+    trigger:'K-9 or more strikeouts',
+    reward:'25% off your total purchase at participating Petco locations with loyalty membership. Ask for "Padres K-9 Promotion" at checkout.',
+    rewardLink:{ text:'Petco.com/PadresK9', href:'https://www.petco.com/PadresK-9' },
+    stat:(box,side)=>{
+      const ps=box.teams[side].teamStats?.pitching;
+      if(ps?.strikeOuts!==undefined) return{value:ps.strikeOuts,label:'Strikeouts'};
+      const pitchers=box.teams[side].pitchers||[],players=box.teams[side].players;
+      let k=0; for(const pid of pitchers) k+=players[`ID${pid}`]?.stats?.pitching?.strikeOuts??0;
+      return{value:k,label:'Strikeouts'};
     },
-    check: (val) => val >= 9,
-    liveMsg: (val) => val >= 9 ? 'Already achieved' : `Need ${9 - val} more`,
+    check:v=>v>=9, liveMsg:v=>v>=9?'Already achieved':`Need ${9-v} more`,
   },
   {
-    id: 'homerun',
-    icon: '🍔',
-    brand: 'Jack in the Box',
-    trigger: 'Any Padres home run',
-    reward: 'Free Jumbo Jack with large drink purchase the day after. San Diego Jack in the Box locations or Jack App with code GOPADRES26.',
-    stat: (box, side) => {
-      const batters = box.teams[side].batters || [];
-      const players = box.teams[side].players;
-      let hrs = 0;
-      for (const pid of batters) hrs += players[`ID${pid}`]?.stats?.batting?.homeRuns ?? 0;
-      return { value: hrs, label: 'Home Runs' };
+    id:'homerun', icon:'🍔', brand:'Jack in the Box',
+    trigger:'Any Padres home run',
+    reward:'Free Jumbo Jack with large drink purchase the day after. San Diego Jack in the Box locations or Jack App with code GOPADRES26.',
+    stat:(box,side)=>{
+      const batters=box.teams[side].batters||[],players=box.teams[side].players;
+      let hrs=0; for(const pid of batters) hrs+=players[`ID${pid}`]?.stats?.batting?.homeRuns??0;
+      return{value:hrs,label:'Home Runs'};
     },
-    check: (val) => val >= 1,
-    liveMsg: (val) => val >= 1 ? 'Already hit one!' : 'None yet',
+    check:v=>v>=1, liveMsg:v=>v>=1?'Already hit one!':'None yet',
   },
   {
-    id: 'win',
-    icon: '🍟',
-    brand: "McDonald's",
-    trigger: 'Padres win',
-    reward: "Free medium fries with $2 purchase the day after a Padres win. Only on the app at participating McDonald's locations.",
-    stat: (box, side, isWin) => ({ value: isWin ? 1 : 0, label: isWin ? 'Win' : 'Loss' }),
-    check: (val) => val === 1,
-    liveMsg: (val, score) => score.padres > score.opp ? 'Currently winning' : score.padres < score.opp ? 'Currently losing' : 'Tied',
-    isWinCard: true,
+    id:'win', icon:'🍟', brand:"McDonald's",
+    trigger:'Padres win',
+    reward:"Free medium fries with $2 purchase the day after a Padres win. Only on the app at participating McDonald's locations.",
+    stat:(box,side,isWin)=>({value:isWin?1:0,label:isWin?'Win':'Loss'}),
+    check:v=>v===1,
+    liveMsg:(v,score)=>score.padres>score.opp?'Currently winning':score.padres<score.opp?'Currently losing':'Tied',
+    isWinCard:true,
   },
   {
-    id: 'stolenbase',
-    icon: '🛵',
-    brand: 'Uber Eats',
-    trigger: 'Any Padres stolen base',
-    reward: 'Look out for a special Uber Eats code for a deal on contactless delivery for restaurant takeout, groceries and more.',
-    stat: (box, side) => {
-      const bs = box.teams[side].teamStats?.batting;
-      if (bs?.stolenBases !== undefined) return { value: bs.stolenBases, label: 'Stolen Bases' };
-      const batters = box.teams[side].batters || [];
-      const players = box.teams[side].players;
-      let sb = 0;
-      for (const pid of batters) sb += players[`ID${pid}`]?.stats?.batting?.stolenBases ?? 0;
-      return { value: sb, label: 'Stolen Bases' };
+    id:'stolenbase', icon:'🛵', brand:'Uber Eats',
+    trigger:'Any Padres stolen base',
+    reward:'Look out for a special Uber Eats code for a deal on contactless delivery for restaurant takeout, groceries and more.',
+    stat:(box,side)=>{
+      const bs=box.teams[side].teamStats?.batting;
+      if(bs?.stolenBases!==undefined) return{value:bs.stolenBases,label:'Stolen Bases'};
+      const batters=box.teams[side].batters||[],players=box.teams[side].players;
+      let sb=0; for(const pid of batters) sb+=players[`ID${pid}`]?.stats?.batting?.stolenBases??0;
+      return{value:sb,label:'Stolen Bases'};
     },
-    check: (val) => val >= 1,
-    liveMsg: (val) => val >= 1 ? 'Already stolen one!' : 'None yet',
+    check:v=>v>=1, liveMsg:v=>v>=1?'Already stolen one!':'None yet',
   },
 ];
 
-function getYesterdayDate() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  const y   = d.getFullYear();
-  const m   = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const str = `${y}-${m}-${day}`;
-  console.log('[Padres Promos] Yesterday (local):', str);
-  return str;
+function getLocalDateStr(offset=0){
+  const d=new Date(); d.setDate(d.getDate()+offset);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function formatDisplayDate(dateStr) {
-  const [y, m, day] = dateStr.split('-');
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[parseInt(m)-1]} ${parseInt(day)}, ${y}`;
+function formatDisplayDate(s){
+  const [y,m,day]=s.split('-');
+  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${parseInt(day)}, ${y}`;
 }
 
-function cardHTML(promo, state) {
-  const corners = `
-    <div class="card-corner tl"></div><div class="card-corner tr"></div>
-    <div class="card-corner bl"></div><div class="card-corner br"></div>`;
+/* Pull abbreviation from every possible location in a game object team node */
+function extractAbbr(teamNode, fallbackId) {
+  return teamNode?.team?.abbreviation
+    || teamNode?.abbreviation
+    || ID_TO_ABBR[fallbackId]
+    || '???';
+}
 
-  let resultHTML = '';
-
-  if (state.status === 'loading') {
-    resultHTML = `<div class="result-area loading"><div class="loading-blink">Loading ▋</div></div>`;
-
-  } else if (state.status === 'nogame') {
-    resultHTML = `
-      <div class="result-area nogame">
-        <div class="result-verdict nogame">No game</div>
-        <div class="result-sub">Padres had the day off</div>
-      </div>`;
-
+function cardHTML(promo, state){
+  const corners=`<div class="card-corner tl"></div><div class="card-corner tr"></div><div class="card-corner bl"></div><div class="card-corner br"></div>`;
+  let resultHTML='';
+  if(state.status==='loading'){
+    resultHTML=`<div class="result-area loading"><div class="loading-blink">Loading ▋</div></div>`;
+  } else if(state.status==='nogame'){
+    resultHTML=`<div class="result-area nogame"><div class="result-verdict nogame">No game</div><div class="result-sub">Padres had the day off</div></div>`;
   } else {
-    const achieved = promo.check(state.value, state);
-    const cls      = state.status === 'live' ? 'live' : (achieved ? 'yes' : 'no');
-    let verdictText, subText, topContent;
-
-    if (state.status === 'live') {
-      verdictText = promo.isWinCard
-        ? promo.liveMsg(state.value, state.score)
-        : (achieved ? 'Yes ✓' : 'In Progress');
-      subText = `<span>${promo.liveMsg ? promo.liveMsg(state.value, state.score) : ''}</span>`;
-      if (promo.isWinCard) {
-        const s = state.score;
-        const lbl = s.padres > s.opp ? 'Padres Lead!' : s.padres < s.opp ? 'Padres Trail' : 'Tied Game';
-        topContent = `<div class="result-game-label">${lbl}</div>`;
-      } else {
-        topContent = `<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
-      }
+    const achieved=promo.check(state.value,state);
+    const cls=state.status==='live'?'live':(achieved?'yes':'no');
+    let verdictText,subText,topContent;
+    if(state.status==='live'){
+      verdictText=promo.isWinCard?promo.liveMsg(state.value,state.score):(achieved?'Yes ✓':'In Progress');
+      subText=`<span>${promo.liveMsg?promo.liveMsg(state.value,state.score):''}</span>`;
+      topContent=promo.isWinCard
+        ?`<div class="result-game-label">${state.score.padres>state.score.opp?'Padres Lead!':state.score.padres<state.score.opp?'Padres Trail':'Tied Game'}</div>`
+        :`<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
     } else {
-      verdictText = achieved ? 'Yes ✓' : 'No ✗';
-      subText     = achieved ? '<span>Promo active today!</span>' : '<span>No promo today</span>';
-      if (promo.isWinCard) {
-        const winLabel  = achieved ? 'Padres Won! 🎉' : 'Padres Lost :(';
-        const friesLine = achieved
-          ? `<div class="result-stat-label">Free Fries! 🍟</div>`
-          : `<div class="result-stat-label">No Free Fries for You</div>`;
-        topContent = `<div class="result-game-label">${winLabel}</div>${friesLine}`;
+      verdictText=achieved?'Yes ✓':'No ✗';
+      subText=achieved?'<span>Promo active today!</span>':'<span>No promo today</span>';
+      topContent=promo.isWinCard
+        ?`<div class="result-game-label">${achieved?'Padres Won! 🎉':'Padres Lost :('}</div><div class="result-stat-label">${achieved?'Free Fries! 🍟':'No Free Fries for You'}</div>`
+        :`<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
+    }
+    const liveDot=state.status==='live'?`<span class="live-dot" style="margin-right:.22rem;vertical-align:middle;position:relative;top:-.04rem"></span>`:'';
+    resultHTML=`<div class="result-area ${cls}">${topContent}<div class="result-verdict ${cls}">${liveDot}${verdictText}</div><div class="result-sub">${subText}</div></div>`;
+  }
+  const rewardLink=promo.rewardLink?` <a href="${promo.rewardLink.href}" target="_blank">${promo.rewardLink.text}</a>`:'';
+  return `<div class="card">${corners}<div class="card-brand-block"><div class="card-icon">${promo.icon}</div><div class="card-brand">${promo.brand}</div></div><div class="card-trigger-label">Promo triggers on</div><div class="card-trigger">${promo.trigger}</div><div class="card-divider"></div>${resultHTML}<div class="card-reward">${promo.reward}${rewardLink}</div></div>`;
+}
+
+async function fetchNLWest(){
+  const todayStr=getLocalDateStr(0);
+
+  const [standRes, schedRes] = await Promise.all([
+    fetch('https://statsapi.mlb.com/api/v1/standings?leagueId=104&season=2026&standingsTypes=regularSeason'),
+    fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${todayStr}&gameType=R&hydrate=linescore`)
+  ]);
+  const standData=await standRes.json();
+  const schedData=await schedRes.json();
+
+  /* W/L map by team ID */
+  const wlMap={};
+  for(const record of standData.records||[]){
+    for(const tr of record.teamRecords||[]){
+      wlMap[tr.team.id]={w:tr.wins,l:tr.losses};
+    }
+  }
+
+  /* Enrich ID_TO_ABBR with whatever the API returns */
+  for(const dateObj of schedData.dates||[]){
+    for(const g of dateObj.games||[]){
+      const hId=g.teams?.home?.team?.id, hAbbr=g.teams?.home?.team?.abbreviation;
+      const aId=g.teams?.away?.team?.id, aAbbr=g.teams?.away?.team?.abbreviation;
+      if(hId && hAbbr) ID_TO_ABBR[hId]=hAbbr;
+      if(aId && aAbbr) ID_TO_ABBR[aId]=aAbbr;
+    }
+  }
+
+  /* Build today-game map keyed by NL West team ID */
+  const todayGames={};
+  for(const dateObj of schedData.dates||[]){
+    for(const g of dateObj.games||[]){
+      const homeId=g.teams?.home?.team?.id;
+      const awayId=g.teams?.away?.team?.id;
+      if(!NL_WEST_IDS.has(homeId) && !NL_WEST_IDS.has(awayId)) continue;
+
+      const state=g.status?.abstractGameState;
+      const startUTC=new Date(g.gameDate);
+      const localTime=startUTC.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+
+      /* Scores — try multiple paths */
+      const homeRuns = g.teams?.home?.score ?? g.linescore?.teams?.home?.runs ?? 0;
+      const awayRuns = g.teams?.away?.score ?? g.linescore?.teams?.away?.runs ?? 0;
+
+      const inning=g.linescore?.currentInning??null;
+      const half=g.linescore?.inningHalf??null;
+
+      /* Abbreviations — use enriched map, fall back to hardcoded */
+      const homeAbbr = g.teams?.home?.team?.abbreviation || ID_TO_ABBR[homeId] || '???';
+      const awayAbbr = g.teams?.away?.team?.abbreviation || ID_TO_ABBR[awayId] || '???';
+
+      const info={state,localTime,homeId,awayId,homeRuns,awayRuns,inning,half,homeAbbr,awayAbbr};
+      if(NL_WEST_IDS.has(homeId)) todayGames[homeId]=info;
+      if(NL_WEST_IDS.has(awayId)) todayGames[awayId]=info;
+    }
+  }
+
+  /* Sort NL West */
+  const sorted=[...NL_WEST].sort((a,b)=>{
+    const wa=wlMap[a.id]?.w??0, wb=wlMap[b.id]?.w??0;
+    const la=wlMap[a.id]?.l??0, lb=wlMap[b.id]?.l??0;
+    return wb!==wa?wb-wa:la-lb;
+  });
+  const leaderRec=wlMap[sorted[0].id]??{w:0,l:0};
+
+  const suffix=n=>[,'st','nd','rd'][n]||'th';
+
+  let html='';
+  sorted.forEach((team,idx)=>{
+    const rec=wlMap[team.id]??{w:0,l:0};
+    const isPadres=team.id===PADRES_ID;
+    const pct=rec.w+rec.l>0?(rec.w/(rec.w+rec.l)).toFixed(3).replace(/^0/,''):'.000';
+    let gb='—';
+    if(idx>0){
+      const n=((leaderRec.w-rec.w)+(rec.l-leaderRec.l))/2;
+      gb=n<=0?'—':n%1===0?String(n):n.toFixed(1);
+    }
+
+    const g=todayGames[team.id];
+    let gameCell=`<div class="no-game">Off day</div>`;
+
+    if(g){
+      const isHome  = g.homeId===team.id;
+      const myAbbr  = isHome ? g.homeAbbr : g.awayAbbr;
+      const oppAbbr = isHome ? g.awayAbbr : g.homeAbbr;
+      const myRuns  = isHome ? g.homeRuns : g.awayRuns;
+      const oppRuns = isHome ? g.awayRuns : g.homeRuns;
+      const vsAt    = isHome ? 'vs' : '@';
+
+      if(g.state==='Live'){
+        const inningStr=g.inning?`${g.half??''} ${g.inning}${suffix(g.inning)}`:'Live';
+        gameCell=`
+          <div class="game-live">
+            <span class="live-dot"></span>
+            <span class="game-scoreline">${myAbbr} ${myRuns} – ${oppRuns} ${oppAbbr}</span>
+          </div>
+          <div class="game-sub">${inningStr}</div>`;
+      } else if(g.state==='Final'){
+        const won=myRuns>oppRuns;
+        gameCell=`
+          <div class="game-scoreline ${won?'final-w':'final-l'}">${myAbbr} ${myRuns} – ${oppRuns} ${oppAbbr}</div>
+          <div class="game-sub">Final</div>`;
       } else {
-        topContent = `<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
+        gameCell=`
+          <div class="game-time">${g.localTime}</div>
+          <div class="game-sub">${vsAt} ${oppAbbr}</div>`;
       }
     }
 
-    const liveDot = state.status === 'live' ? '<span class="live-dot"></span>' : '';
-
-    resultHTML = `
-      <div class="result-area ${cls}">
-        ${topContent}
-        <div class="result-verdict ${cls}">${liveDot}${verdictText}</div>
-        <div class="result-sub">${subText}</div>
-      </div>`;
-  }
-
-  const rewardLink = promo.rewardLink
-    ? ` <a href="${promo.rewardLink.href}" target="_blank">${promo.rewardLink.text}</a>`
-    : '';
-
-  return `
-    <div class="card">
-      ${corners}
-      <div class="card-brand-block">
-        <div class="card-icon">${promo.icon}</div>
-        <div class="card-brand">${promo.brand}</div>
-      </div>
-      <div class="card-trigger-label">Promo triggers on</div>
-      <div class="card-trigger">${promo.trigger}</div>
-      <div class="card-divider"></div>
-      ${resultHTML}
-      <div class="card-reward">${promo.reward}${rewardLink}</div>
-    </div>`;
-}
-
-function renderLoadingCards() {
-  document.getElementById('grid').innerHTML =
-    PROMOS.map(p => cardHTML(p, { status: 'loading' })).join('');
-}
-
-async function render() {
-  console.log('[Padres Promos] --- render() started ---');
-  renderLoadingCards();
-
-  const yesterday = getYesterdayDate();
-  document.getElementById('headerDate').textContent = formatDisplayDate(yesterday);
-
-  const schedUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${yesterday}&teamId=${TEAM_ID}&gameType=R&hydrate=linescore`;
-  console.log('[Padres Promos] Fetching schedule:', schedUrl);
-  const schedRes  = await fetch(schedUrl);
-  const schedData = await schedRes.json();
-  console.log('[Padres Promos] Schedule data:', schedData);
-
-  const dates = schedData.dates || [];
-  const game  = dates[0]?.games?.find(g =>
-    g.status.abstractGameState === 'Final' ||
-    g.status.abstractGameState === 'Live'
-  );
-
-  if (!game) {
-    console.log('[Padres Promos] No game found');
-    document.getElementById('grid').innerHTML =
-      PROMOS.map(p => cardHTML(p, { status: 'nogame' })).join('');
-    document.getElementById('matchupLine').textContent = '';
-    return;
-  }
-
-  const isLive = game.status.abstractGameState === 'Live';
-  console.log('[Padres Promos] gamePk:', game.gamePk, '| isLive:', isLive);
-
-  const boxUrl = `https://statsapi.mlb.com/api/v1/game/${game.gamePk}/boxscore`;
-  console.log('[Padres Promos] Fetching boxscore:', boxUrl);
-  const boxRes = await fetch(boxUrl);
-  const box    = await boxRes.json();
-  console.log('[Padres Promos] Boxscore:', box);
-
-  const homeId     = box.teams.home.team.id;
-  const padresSide = homeId === TEAM_ID ? 'home' : 'away';
-  const oppSide    = padresSide === 'home' ? 'away' : 'home';
-
-  const padresRuns = box.teams[padresSide].teamStats?.batting?.runs ?? 0;
-  const oppRuns    = box.teams[oppSide].teamStats?.batting?.runs ?? 0;
-  const isWin      = !isLive && padresRuns > oppRuns;
-  const oppName    = box.teams[oppSide].team.name;
-  const score      = { padres: padresRuns, opp: oppRuns };
-
-  const awayLabel = padresSide === 'away' ? 'Padres' : oppName;
-  const homeLabel = padresSide === 'home' ? 'Padres' : oppName;
-  const awayRuns  = padresSide === 'away' ? padresRuns : oppRuns;
-  const homeRuns  = padresSide === 'home' ? padresRuns : oppRuns;
-
-  const status = isLive ? 'live' : 'final';
-
-  const cards = PROMOS.map(promo => {
-    const { value, label } = promo.stat(box, padresSide, isWin);
-    console.log(`[Padres Promos] ${promo.id}: value=${value}, achieved=${promo.check(value, { score })}`);
-    return cardHTML(promo, { status, value, label, isWin, score });
+    html+=`
+      <tr class="${isPadres?'padres-row':''}">
+        <td><div class="rank-num">${idx+1}</div></td>
+        <td>
+          <div class="team-name-cell">
+            <span class="team-abbr ${isPadres?'padres':''}">${team.abbr}</span>
+            <span class="team-full">${team.name}</span>
+          </div>
+        </td>
+        <td class="num"><div class="record">${rec.w}</div></td>
+        <td class="num"><div class="record">${rec.l}</div></td>
+        <td class="num"><div class="pct">${pct}</div></td>
+        <td class="num"><div class="gb">${gb}</div></td>
+        <td class="next-game-cell">${gameCell}</td>
+      </tr>`;
   });
 
-  document.getElementById('grid').innerHTML = cards.join('');
+  document.getElementById('standingsBody').innerHTML=html;
+}
 
-  const ml = document.getElementById('matchupLine');
-  ml.innerHTML = isLive
-    ? `<span style="color:var(--gold-bright)">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayRuns} — ${homeRuns} ${homeLabel}`
-    : `${awayLabel} ${awayRuns} — ${homeRuns} ${homeLabel}`;
+async function render(){
+  document.getElementById('headerDate').textContent=formatDisplayDate(getLocalDateStr(0));
+  document.getElementById('grid').innerHTML=PROMOS.map(p=>cardHTML(p,{status:'loading'})).join('');
 
-  console.log('[Padres Promos] --- render() complete ---');
+  const yesterdayStr=getLocalDateStr(-1);
+  const schedRes=await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${yesterdayStr}&teamId=${PADRES_ID}&gameType=R&hydrate=linescore`);
+  const schedData=await schedRes.json();
+
+  const game=schedData.dates?.[0]?.games?.find(g=>
+    g.status.abstractGameState==='Final'||g.status.abstractGameState==='Live'
+  );
+
+  if(!game){
+    document.getElementById('grid').innerHTML=PROMOS.map(p=>cardHTML(p,{status:'nogame'})).join('');
+    document.getElementById('matchupLine').textContent='';
+  } else {
+    const isLive=game.status.abstractGameState==='Live';
+    const boxRes=await fetch(`https://statsapi.mlb.com/api/v1/game/${game.gamePk}/boxscore`);
+    const box=await boxRes.json();
+    const homeId=box.teams.home.team.id;
+    const padresSide=homeId===PADRES_ID?'home':'away';
+    const oppSide=padresSide==='home'?'away':'home';
+    const padresRuns=box.teams[padresSide].teamStats?.batting?.runs??0;
+    const oppRuns=box.teams[oppSide].teamStats?.batting?.runs??0;
+    const isWin=!isLive&&padresRuns>oppRuns;
+    const oppName=box.teams[oppSide].team.name;
+    const score={padres:padresRuns,opp:oppRuns};
+    const status=isLive?'live':'final';
+
+    const awayLabel=padresSide==='away'?'Padres':oppName;
+    const homeLabel=padresSide==='home'?'Padres':oppName;
+    const awayR=padresSide==='away'?padresRuns:oppRuns;
+    const homeR=padresSide==='home'?padresRuns:oppRuns;
+
+    document.getElementById('grid').innerHTML=PROMOS.map(promo=>{
+      const{value,label}=promo.stat(box,padresSide,isWin);
+      return cardHTML(promo,{status,value,label,isWin,score});
+    }).join('');
+
+    document.getElementById('matchupLine').innerHTML=isLive
+      ?`<span style="color:var(--gold-bright)">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayR} — ${homeR} ${homeLabel}`
+      :`${awayLabel} ${awayR} — ${homeR} ${homeLabel}`;
+  }
+
+  fetchNLWest().catch(err=>{
+    document.getElementById('standingsBody').innerHTML=
+      `<tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--no);font-size:0.44rem">Error loading standings: ${err.message}</td></tr>`;
+  });
 }
 
 render();
