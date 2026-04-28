@@ -266,9 +266,39 @@
       color: rgba(0,255,65,0.3);
       text-transform: uppercase;
     }
+
+    /* ── Custom cursor ── */
+    * { cursor: none !important; }
+
+    #cursor-dot {
+      pointer-events: none;
+      position: fixed;
+      z-index: 200;
+      width: 20px;
+      height: 24px;
+      filter:
+        drop-shadow(0 0 3px rgba(0,255,65,0.95))
+        drop-shadow(0 0 8px rgba(0,255,65,0.45));
+    }
+
+    /* ── Grid canvas (behind everything) ── */
+    #grid-canvas {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
   </style>
 </head>
 <body>
+
+  <canvas id="grid-canvas"></canvas>
+  <div id="cursor-dot">
+    <svg width="20" height="24" viewBox="0 0 20 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 2 L2 20 L6.5 15.5 L10.5 22 L13 21 L9 14.5 L16 14.5 Z"
+            fill="#00ff41" stroke="#003a10" stroke-width="1.2" stroke-linejoin="round"/>
+    </svg>
+  </div>
 
   <div class="tracking-bar"></div>
 
@@ -297,8 +327,8 @@
       </a>
       -->
 
-      <a href="page1.html" class="nav-item">
-        <span class="label">coming soon</span>
+      <a href="padres.html" class="nav-item">
+        <span class="label">Padres Promo Status</span>
         <span class="track-num">T-01</span>
       </a>
 
@@ -319,7 +349,7 @@
   </main>
 
   <script>
-    // Timecode counter (cosmetic)
+    // ── Timecode counter (cosmetic) ──
     const tc = document.getElementById('timecode');
     let frames = 0;
     setInterval(() => {
@@ -331,6 +361,94 @@
       tc.textContent = [h, m, s].map(n => String(n).padStart(2,'0')).join(':')
                        + ':' + String(f).padStart(2,'0');
     }, 1000 / 30);
+
+    // ── Glowing cursor ──
+    const dot = document.getElementById('cursor-dot');
+    let mx = -999, my = -999;
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      dot.style.left = mx + 'px';
+      dot.style.top  = my + 'px';
+    });
+
+    // ── Grid canvas ──
+    const canvas = document.getElementById('grid-canvas');
+    const ctx = canvas.getContext('2d');
+    const CELL = 40;
+    const RADIUS = 150;
+    const FADE = 0.08;
+
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    function drawGrid() {
+      const w = canvas.width, h = canvas.height;
+      ctx.fillStyle = `rgba(2, 11, 2, ${FADE})`;
+      ctx.fillRect(0, 0, w, h);
+
+      const cols = Math.ceil(w / CELL) + 1;
+      const rows = Math.ceil(h / CELL) + 1;
+
+      // Grid lines
+      ctx.shadowBlur = 0;
+      for (let c = 0; c <= cols; c++) {
+        const x = c * CELL;
+        if (Math.abs(x - mx) > RADIUS) continue;
+        for (let r = 0; r < rows; r++) {
+          const y1 = r * CELL, y2 = y1 + CELL;
+          const d1 = Math.hypot(x - mx, y1 - my);
+          const d2 = Math.hypot(x - mx, y2 - my);
+          const alpha = Math.pow(1 - Math.min(d1, d2) / RADIUS, 2.5) * 0.09;
+          if (alpha <= 0) continue;
+          ctx.strokeStyle = `rgba(0, 255, 65, ${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(x, y1); ctx.lineTo(x, y2);
+          ctx.stroke();
+        }
+      }
+      for (let r = 0; r <= rows; r++) {
+        const y = r * CELL;
+        if (Math.abs(y - my) > RADIUS) continue;
+        for (let c = 0; c < cols; c++) {
+          const x1 = c * CELL, x2 = x1 + CELL;
+          const d1 = Math.hypot(x1 - mx, y - my);
+          const d2 = Math.hypot(x2 - mx, y - my);
+          const alpha = Math.pow(1 - Math.min(d1, d2) / RADIUS, 2.5) * 0.09;
+          if (alpha <= 0) continue;
+          ctx.strokeStyle = `rgba(0, 255, 65, ${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(x1, y); ctx.lineTo(x2, y);
+          ctx.stroke();
+        }
+      }
+
+      // Intersection dots
+      for (let c = 0; c <= cols; c++) {
+        const x = c * CELL;
+        if (Math.abs(x - mx) > RADIUS) continue;
+        for (let r = 0; r <= rows; r++) {
+          const y = r * CELL;
+          const dist = Math.hypot(x - mx, y - my);
+          if (dist > RADIUS) continue;
+          const alpha = Math.pow(1 - dist / RADIUS, 2.5) * 0.28;
+          ctx.fillStyle = `rgba(0, 255, 65, ${alpha})`;
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.beginPath();
+          ctx.arc(x, y, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      requestAnimationFrame(drawGrid);
+    }
+    drawGrid();
   </script>
 
 </body>
