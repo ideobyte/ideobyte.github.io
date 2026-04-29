@@ -364,7 +364,9 @@
 
     // ── Glowing cursor (desktop only) ──
     const dot = document.getElementById('cursor-dot');
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+      || navigator.maxTouchPoints > 2;
     let mx = -999, my = -999;
 
     if (!isMobile) {
