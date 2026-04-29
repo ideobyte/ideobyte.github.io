@@ -815,6 +815,11 @@ function stopGamePolling() {
   if (_gamePollInterval) { clearInterval(_gamePollInterval); _gamePollInterval = null; }
 }
 
+/* ── Poll standings every 30s ── */
+setInterval(() => {
+  fetchNLWest().catch(() => {});
+}, 30000);
+
 /* ── Padres live game / next game panel ── */
 async function fetchPadresGame() {
   const todayStr = getLocalDateStr(0);
