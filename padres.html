@@ -125,12 +125,12 @@
   .team-name-cell { display:flex; align-items:center; gap:0.5rem; }
   .team-abbr { font-family:'Bebas Neue',sans-serif; font-size:0.9rem; letter-spacing:0.05rem; color:var(--cream); min-width:2.2rem; }
   .team-abbr.padres { color: var(--gold-bright); }
-  .team-full { font-size:0.62rem; color:var(--cream); letter-spacing:0.03rem; }
-  .record { font-family:'Bebas Neue',sans-serif; font-size:0.65rem; color:var(--cream); }
-  .gb  { font-family:'Bebas Neue',sans-serif; font-size:0.65rem; color:var(--cream); }
-  .pct { font-family:'Bebas Neue',sans-serif; font-size:0.65rem; color:var(--cream); }
+  .team-full { font-size:0.62rem; color:var(--cream); letter-spacing:0.03rem; white-space:nowrap; }
+  .record { font-size:0.65rem; color:var(--cream); }
+  .gb  { font-size:0.65rem; color:var(--cream); }
+  .pct { font-size:0.65rem; color:var(--cream); }
 
-  .next-game-cell { text-align:right; min-width:11rem; padding-right:0.9rem; }
+  .next-game-cell { text-align:right; width:28%; padding:0.3rem 1.4rem 0.3rem 0; }
   .game-live { display:inline-flex; align-items:center; gap:0.3rem; }
   .live-dot { display:inline-block; width:0.31rem; height:0.31rem; background:var(--live); border-radius:50%; animation:pulse 1.2s ease-in-out infinite; flex-shrink:0; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.65)} }
@@ -260,16 +260,17 @@
   <table class="standings-table">
     <thead>
       <tr>
-        <th>Team</th>
+        <th style="width:35%">Team</th>
         <th class="num">W</th>
         <th class="num">L</th>
         <th class="num">PCT</th>
         <th class="num hide-mobile">GB</th>
-        <th style="text-align:right;padding-right:0.9rem">Today's Game</th>
+        <th class="num">L10</th>
+        <th class="next-game-cell" style="font-size:0.5rem;letter-spacing:0.2rem;color:var(--cream-muted);font-weight:400;text-transform:uppercase;">Today's Game</th>
       </tr>
     </thead>
     <tbody id="standingsBody">
-      <tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--cream-muted);font-size:0.44rem">Loading standings...</td></tr>
+      <tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--cream-muted);font-size:0.44rem">Loading standings...</td></tr>
     </tbody>
   </table>
 </div><!-- end nlwest-panel -->
@@ -575,7 +576,8 @@ async function fetchNLWest(){
   const wlMap={};
   for(const record of standData.records||[]){
     for(const tr of record.teamRecords||[]){
-      wlMap[tr.team.id]={w:tr.wins,l:tr.losses};
+      const l10 = tr.records?.splitRecords?.find(s=>s.type==='lastTen');
+      wlMap[tr.team.id]={w:tr.wins, l:tr.losses, l10w: l10?.wins??'-', l10l: l10?.losses??'-'};
     }
   }
 
@@ -696,6 +698,7 @@ async function fetchNLWest(){
         <td class="num"><div class="record">${rec.l}</div></td>
         <td class="num"><div class="pct">${pct}</div></td>
         <td class="num hide-mobile"><div class="gb">${gb}</div></td>
+        <td class="num"><div class="record">${rec.l10w}-${rec.l10l}</div></td>
         <td class="next-game-cell">${gameCell}</td>
       </tr>`;
   });
@@ -751,7 +754,7 @@ async function render(){
   Promise.all([
     fetchNLWest().catch(err=>{
       document.getElementById('standingsBody').innerHTML=
-        `<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--no);font-size:0.44rem">Error loading standings: ${err.message}</td></tr>`;
+        `<tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--no);font-size:0.44rem">Error loading standings: ${err.message}</td></tr>`;
     }),
     fetchPadresGame().catch(err=>{
       document.getElementById('gamePanel').innerHTML=
