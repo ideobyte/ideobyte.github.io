@@ -299,7 +299,11 @@
   .gp-lineup li { font-size:0.6rem; line-height:1.7; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gp-lineup li.current-batter { color:var(--gold-bright); font-weight:700; }
   .gp-lineup li .order-num { color:rgba(200,146,42,0.5); font-size:0.45rem; margin-right:0.2rem; }
+  .gp-right .gp-lineup li .order-num { margin-right:0; margin-left:0.2rem; }
   .gp-lineup li .pos-tag { font-size:0.4rem; color:rgba(200,146,42,0.55); margin-left:0.2rem; }
+  .gp-lineup li .sub-mark { font-size:0.38rem; color:var(--yes); margin-left:0.15rem; vertical-align:super; }
+  /* Shared pos-tag style for use outside lineup (e.g. pitcher footer) */
+  .pos-tag { font-family:'IBM Plex Mono',monospace; font-size:0.4rem; color:rgba(200,146,42,0.55); }
 
   /* Middle status */
   .gp-inning-block { text-align:center; margin-bottom:0.3rem; }
@@ -312,45 +316,58 @@
 
   .gp-divider { height:1px; background:rgba(200,146,42,0.2); margin:0.2rem 0; width:100%; }
 
-  /* Diamond */
-  .gp-diamond { position:relative; width:5rem; height:5rem; flex-shrink:0; margin:0.05rem 0; }
-  .base { position:absolute; width:1rem; height:1rem; border:1.5px solid rgba(200,146,42,0.35); background:transparent; transition:background 0.2s, border-color 0.2s; }
-  .base.on { background:var(--gold-bright); border-color:var(--gold-bright); }
-  .base.home   { bottom:0.1rem; left:50%; transform:translateX(-50%) rotate(45deg); }
-  .base.first  { right:0.1rem;  top:50%;  transform:translateY(-50%) rotate(45deg); }
-  .base.second { top:0.1rem;    left:50%; transform:translateX(-50%) rotate(45deg); }
-  .base.third  { left:0.1rem;   top:50%;  transform:translateY(-50%) rotate(45deg); }
-  .base-line { position:absolute; background:rgba(200,146,42,0.18); width:1.5px; height:52%; transform-origin:bottom center; }
-  .base-line.left  { bottom:14%; left:22%;  transform:rotate(-45deg); }
-  .base-line.right { bottom:14%; right:22%; transform:rotate(45deg); }
-  .base-line.top-left  { top:14%; left:22%;  transform:rotate(45deg);  transform-origin:top center; }
-  .base-line.top-right { top:14%; right:22%; transform:rotate(-45deg); transform-origin:top center; }
+  /* Diamond SVG */
+  .gp-diamond { flex-shrink:0; margin:0; }
+  .gp-diamond svg { display:block; }
+  .base { display:none; } /* bases handled by SVG now */
+  .base-line { display:none; }
 
   /* Outs */
-  .gp-outs-col { display:flex; flex-direction:column; align-items:center; gap:0.2rem; margin-top:0.1rem; }
-  .gp-outs-label { font-size:0.33rem; letter-spacing:0.18rem; color:var(--cream-muted); text-transform:uppercase; }
+  .gp-outs-col { display:flex; flex-direction:column; align-items:center; gap:0.2rem; margin-top:-0.6rem; }
+  .gp-outs-label { font-size:0.33rem; letter-spacing:0.18rem; color:var(--cream-muted); text-transform:uppercase; padding-left:0.3rem; }
   .outs-pips { display:flex; gap:0.25rem; }
-  .out-pip { width:0.55rem; height:0.55rem; border-radius:50%; border:1.5px solid rgba(200,146,42,0.35); background:transparent; transition:background 0.2s; }
-  .out-pip.on { background:var(--no); border-color:var(--no); }
+  .out-pip { width:0.55rem; height:0.55rem; border-radius:50%; border:1.5px solid rgba(200,146,42,0.75); background:transparent; transition:background 0.2s; }
+  .out-pip.on { background:var(--no); border-color:var(--no); box-shadow:0 0 0 1.5px #000; }
 
-  /* Pitcher/batter — pushed to bottom of mid column */
-  .gp-matchup { margin-top:auto; padding-top:0.5rem; width:100%; }
+  /* Score display in center column */
+  .gp-center-score {
+    display:flex; align-items:baseline; justify-content:center;
+    gap:0.5rem; margin-top:0.15rem;
+  }
+  .gp-center-team {
+    font-family:'Bebas Neue',sans-serif; font-size:1.6rem;
+    letter-spacing:0.05rem; line-height:1;
+  }
+  .gp-center-team.padres { color:var(--gold-bright); }
+  .gp-center-team.opp    { color:var(--cream); }
+  .gp-center-runs {
+    font-family:'Bebas Neue',sans-serif; font-size:1.6rem;
+    color:var(--cream); line-height:1;
+  }
+  .gp-center-dash { color:var(--cream-muted); font-size:1rem; }
 
-  /* Three-cell row: pitcher | inning | batter */
-  .gp-matchup-trio { display:flex; align-items:center; gap:0.2rem; width:100%; }
-  .gp-matchup-cell { flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; }
-  .gp-matchup-cell-right { align-items:flex-end; text-align:right; }
+  /* Team name above lineup */
+  .gp-lineup-name {
+    font-family:'Bebas Neue',sans-serif; font-size:0.65rem;
+    letter-spacing:0.12rem; margin-bottom:0.15rem;
+  }
+  .gp-lineup-name.padres { color:var(--gold-bright); }
+  .gp-lineup-name.opp    { color:var(--cream); }
+  .gp-right .gp-lineup-name { text-align:right; }
 
-  /* Center inning block inside trio */
-  .gp-matchup-inning { flex-shrink:0; display:flex; flex-direction:column; align-items:center; padding:0 0.3rem; }
+  /* Inning + count block in center column — sits right under score */
+  .gp-inning-block-mid { display:flex; flex-direction:column; align-items:center; margin-top:0.1rem; }
   .gp-half-arrow-sm { font-size:0.55rem; color:var(--gold-bright); line-height:1; }
   .gp-inning-big { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; color:var(--cream); line-height:1; letter-spacing:0.05rem; }
-  .gp-count-big { font-family:'Bebas Neue',sans-serif; font-size:0.9rem; color:var(--gold-bright); line-height:1.2; letter-spacing:0.05rem; }
+  .gp-count-big  { font-family:'Bebas Neue',sans-serif; font-size:0.9rem; color:var(--gold-bright); line-height:1.2; letter-spacing:0.05rem; }
 
-  .gp-matchup-row { display:flex; flex-direction:column; align-items:center; margin-bottom:0.3rem; }
-  .gp-matchup-label { font-size:0.32rem; letter-spacing:0.15rem; color:var(--cream-muted); text-transform:uppercase; }
-  .gp-matchup-name  { font-family:'Bebas Neue',sans-serif; font-size:0.65rem; color:var(--cream); letter-spacing:0.02rem; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
-  .gp-matchup-stat  { font-size:0.32rem; color:var(--cream-muted); }
+  /* Pitcher footer at bottom of lineup columns */
+  .gp-pitcher-footer { margin-top:auto; padding-top:0; border-top:1px solid rgba(200,146,42,0.2); }
+  .gp-pitcher-name  { font-size:0.6rem; color:var(--cream); line-height:1.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gp-pitcher-name .pos-tag { font-family:'IBM Plex Mono',monospace; font-size:0.4rem; color:rgba(200,146,42,0.55); margin-left:0.2rem; }
+  .gp-right .gp-pitcher-name .pos-tag { margin-left:0; margin-right:0.2rem; }
+  .gp-pitcher-stat  { font-size:0.45rem; color:var(--cream-muted); }
+  .gp-right .gp-pitcher-footer { text-align:right; }
 
   /* next game */
   .gp-next { text-align:center; padding:0.8rem 0; width:100%; }
@@ -793,6 +810,10 @@ async function fetchPadresGame() {
     const awayId      = feed.gameData?.teams?.away?.id;
     const oppAbbr     = ID_TO_ABBR[padresSide === 'home' ? awayId : homeTeamId] ?? '???';
 
+    // Short team names (no city) — e.g. "Padres", "Cubs"
+    const padresShortName = feed.gameData?.teams?.[padresSide]?.teamName ?? 'Padres';
+    const oppShortName    = feed.gameData?.teams?.[oppSide]?.teamName    ?? oppAbbr;
+
     const homeRuns    = linescore.teams?.home?.runs ?? 0;
     const awayRuns    = linescore.teams?.away?.runs ?? 0;
     const padresRuns  = padresSide === 'home' ? homeRuns : awayRuns;
@@ -805,9 +826,7 @@ async function fetchPadresGame() {
     const onSecond    = !!offense.second;
     const onThird     = !!offense.third;
 
-    const currentPitcher = defense.pitcher?.fullName ?? matchup.pitcher?.fullName ?? '—';
     const currentBatter  = matchup.batter?.fullName  ?? offense.batter?.fullName  ?? '—';
-    const pitchCount     = matchup.pitchCount != null ? `${matchup.pitchCount} pitches` : '';
     const batterCount    = play.count ? `${play.count.balls}-${play.count.strikes}` : '';
 
     // Returns last name respecting Jr./Sr./II/III/IV suffixes
@@ -821,13 +840,38 @@ async function fetchPadresGame() {
     }
 
     function getLineup(side) {
+      // Use the live feed's battingOrder — this updates in real time with substitutions
+      // Fall back to boxscore batters if live feed data isn't available
+      const feedTeam    = feed.liveData?.boxscore?.teams?.[side];
+      const feedPlayers = feedTeam?.players ?? {};
+      const battingOrder = feedTeam?.battingOrder ?? [];
+
+      if (battingOrder.length > 0) {
+        return battingOrder.slice(0, 9).map((pid, i) => {
+          const key  = `ID${pid}`;
+          const p    = feedPlayers[key] ?? {};
+          const name = p.person?.fullName ?? `Player ${pid}`;
+          const pos  = p.position?.abbreviation ?? p.allPositions?.[0]?.abbreviation ?? '';
+          const parts = name.split(' ');
+          const suffixes = ['jr.','sr.','ii','iii','iv','v'];
+          let last;
+          if (parts.length >= 3 && suffixes.includes(parts[parts.length - 1].toLowerCase())) {
+            last = parts[parts.length - 2] + ' ' + parts[parts.length - 1];
+          } else {
+            last = parts[parts.length - 1];
+          }
+          const isSub = p.gameStatus?.isSubstitute ?? false;
+          return { num: i + 1, name, last, pos, id: pid, isSub };
+        });
+      }
+
+      // Fallback: boxscore batters list
       const batters  = box.teams[side].batters ?? [];
       const players  = box.teams[side].players ?? {};
       return batters.slice(0, 9).map((pid, i) => {
         const p    = players[`ID${pid}`] ?? {};
         const name = p.person?.fullName ?? `Player ${pid}`;
         const pos  = p.position?.abbreviation ?? '';
-        // Handle suffixes like Jr., Sr., II, III, IV — include them with the last name
         const parts = name.split(' ');
         const suffixes = ['jr.','sr.','ii','iii','iv','v'];
         let last;
@@ -836,25 +880,34 @@ async function fetchPadresGame() {
         } else {
           last = parts[parts.length - 1];
         }
-        return { num: i + 1, name, last, pos, id: pid };
+        return { num: i + 1, name, last, pos, id: pid, isSub: false };
       });
     }
 
     const padresLineup = getLineup(padresSide);
     const oppLineup    = getLineup(oppSide);
-    const currentBatterLast = lastName(currentBatter);
-    const currentPitcherLast = lastName(currentPitcher);
+    const currentBatterLast  = lastName(currentBatter);
     const suffix    = n => [,'st','nd','rd'][n] || 'th';
     const halfArrow = half.toLowerCase().includes('top') ? '▲' : '▼';
     const halfWord  = half.toLowerCase().includes('top') ? 'Top' : 'Bot';
 
     function lineupHTML(lineup, side) {
-      const isBatting = half.toLowerCase().includes('top') ? side === oppSide : side === padresSide;
+      const isBatting  = half.toLowerCase().includes('top') ? side === oppSide : side === padresSide;
+      const isRight    = side === oppSide;
       return lineup.map(p => {
         const isCurrent = isBatting && p.last === currentBatterLast && !isWarmup;
-        return `<li class="${isCurrent ? 'current-batter' : ''}">
-          <span class="order-num">${p.num}.</span>${p.last}<span class="pos-tag">${p.pos}</span>
-        </li>`;
+        const subMark   = p.isSub ? `<span class="sub-mark">↑</span>` : '';
+        const posStr    = `<span class="pos-tag">${p.pos}</span>`;
+
+        let inner;
+        if (isRight) {
+          // Right: POS[space] Name↑ .num
+          inner = `${posStr} ${subMark}${p.last}<span class="order-num">${p.num}.</span>`;
+        } else {
+          // Left: num. Name↑ POS
+          inner = `<span class="order-num">${p.num}.</span>${p.last}${subMark}${posStr}`;
+        }
+        return `<li class="${isCurrent ? 'current-batter' : ''}">${inner}</li>`;
       }).join('');
     }
 
@@ -867,54 +920,92 @@ async function fetchPadresGame() {
          </div>`
       : `<div class="gp-live-badge"><span class="live-dot"></span> Live</div>`;
 
-    const matchupBlock = isWarmup ? '' : `
-      <div class="gp-divider"></div>
-      <div class="gp-matchup">
-        <div class="gp-matchup-trio">
-          <div class="gp-matchup-cell">
-            <div class="gp-matchup-label">Pitching</div>
-            <div class="gp-matchup-name">${currentPitcherLast}</div>
-            <div class="gp-matchup-stat">${pitchCount}</div>
-          </div>
-          <div class="gp-matchup-inning">
-            <div class="gp-half-arrow-sm">${halfArrow}</div>
-            <div class="gp-inning-big">${inning}${suffix(inning)}</div>
-            <div class="gp-count-big">${batterCount || '0-0'}</div>
-          </div>
-          <div class="gp-matchup-cell gp-matchup-cell-right">
-            <div class="gp-matchup-label">At Bat</div>
-            <div class="gp-matchup-name">${currentBatterLast}</div>
-            <div class="gp-matchup-stat">&nbsp;</div>
-          </div>
-        </div>
+    // Get the opposing team's current pitcher too
+    const oppDefense     = feed.liveData?.linescore?.[oppSide === 'home' ? 'defense' : 'offense'] ?? {};
+    // More reliable: pull from boxscore current pitcher for each side
+    const feedHome       = feed.liveData?.boxscore?.teams?.home;
+    const feedAway       = feed.liveData?.boxscore?.teams?.away;
+    const padresFeedTeam = padresSide === 'home' ? feedHome : feedAway;
+    const oppFeedTeam    = padresSide === 'home' ? feedAway : feedHome;
+
+    // Current pitcher for each team = the pitcher listed in their pitchers array who is currently active
+    function getActivePitcher(feedTeam) {
+      const pitchers = feedTeam?.pitchers ?? [];
+      const players  = feedTeam?.players ?? {};
+      // Last pitcher in the array is current
+      for (let i = pitchers.length - 1; i >= 0; i--) {
+        const p = players[`ID${pitchers[i]}`];
+        if (p?.stats?.pitching) return p.person?.fullName ?? '—';
+      }
+      return '—';
+    }
+
+    const padresPitcher = getActivePitcher(padresFeedTeam);
+    const oppPitcher    = getActivePitcher(oppFeedTeam);
+    const padresPitcherLast = lastName(padresPitcher);
+    const oppPitcherLast    = lastName(oppPitcher);
+
+    // Pitch count for each active pitcher
+    function getPitchCount(feedTeam) {
+      const pitchers = feedTeam?.pitchers ?? [];
+      const players  = feedTeam?.players ?? {};
+      for (let i = pitchers.length - 1; i >= 0; i--) {
+        const p = players[`ID${pitchers[i]}`];
+        if (p?.stats?.pitching) return p.stats.pitching.pitchesThrown ?? p.stats.pitching.numberOfPitches ?? null;
+      }
+      return null;
+    }
+
+    const padresPitchCount = getPitchCount(padresFeedTeam);
+    const oppPitchCount    = getPitchCount(oppFeedTeam);
+
+    const inningBlock = isWarmup ? '' : `
+      <div class="gp-inning-block-mid">
+        <div class="gp-half-arrow-sm">${halfArrow}</div>
+        <div class="gp-inning-big">${inning}${suffix(inning)}</div>
+        <div class="gp-count-big">${batterCount || '0-0'}</div>
       </div>`;
+
+    function diamondSVG(first, second, third) {
+      const pad  = 14, size = 80, bs = 26, cx = size / 2;
+      const top   = { x: cx,               y: bs/2 + 1 };
+      const right = { x: size - bs/2 - 1,  y: cx       };
+      const left  = { x: bs/2 + 1,         y: cx       };
+      const dim = 'rgba(200,146,42,0.7)', lit = '#E8B84B';
+      const totalW = size + pad*2, totalH = size + pad*2;
+      function baseRect(px, py, on) {
+        const ox = px+pad, oy = py+pad;
+        return `<rect x="${ox-bs/2}" y="${oy-bs/2}" width="${bs}" height="${bs}"
+          fill="${on?lit:'transparent'}" stroke="${on?lit:dim}" stroke-width="2.5"
+          transform="rotate(45 ${ox} ${oy})" rx="1"/>`;
+      }
+      return `<svg width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">
+        ${baseRect(right.x,right.y,first)}${baseRect(top.x,top.y,second)}${baseRect(left.x,left.y,third)}
+      </svg>`;
+    }
+
+    // Trim 3-letter abbrs to 2 for score display (e.g. CHC→CH, LAD→LA)
+    const padresScoreAbbr = 'SD'; // Padres always SD (2 letters, no change)
+    const oppScoreAbbr    = oppAbbr.length >= 3 ? oppAbbr.slice(0, -1) : oppAbbr;
 
     panel.innerHTML = `${corners}
       <div class="gp-body">
 
         <!-- LEFT: Padres -->
         <div class="gp-left">
-          <div class="gp-team-topline">
-            <span class="gp-team-header padres">SD</span>
-            <span class="gp-team-score">${padresRuns}</span>
-          </div>
+          <div class="gp-lineup-name padres">${padresShortName}</div>
           <ul class="gp-lineup">${lineupHTML(padresLineup, padresSide)}</ul>
+          <div class="gp-pitcher-footer">
+            <div class="gp-pitcher-name"><span class="pos-tag">P </span>${padresPitcherLast}</div>
+            ${padresPitchCount != null ? `<div class="gp-pitcher-stat">${padresPitchCount} pitches</div>` : ''}
+          </div>
         </div>
 
         <!-- MIDDLE: game state -->
         <div class="gp-mid">
           ${statusBlock}
           <div class="gp-divider"></div>
-          <div class="gp-diamond">
-            <div class="base-line left"></div>
-            <div class="base-line right"></div>
-            <div class="base-line top-left"></div>
-            <div class="base-line top-right"></div>
-            <div class="base home"></div>
-            <div class="base first  ${onFirst  ? 'on' : ''}"></div>
-            <div class="base second ${onSecond ? 'on' : ''}"></div>
-            <div class="base third  ${onThird  ? 'on' : ''}"></div>
-          </div>
+          <div class="gp-diamond">${diamondSVG(onFirst, onSecond, onThird)}</div>
           <div class="gp-outs-col">
             <div class="gp-outs-label">Outs</div>
             <div class="outs-pips">
@@ -923,16 +1014,24 @@ async function fetchPadresGame() {
               <div class="out-pip ${outs >= 3 ? 'on' : ''}"></div>
             </div>
           </div>
-          ${matchupBlock}
+          <div class="gp-center-score">
+            <span class="gp-center-team padres">${padresScoreAbbr}</span>
+            <span class="gp-center-runs">${padresRuns}</span>
+            <span class="gp-center-dash">–</span>
+            <span class="gp-center-runs">${oppRuns}</span>
+            <span class="gp-center-team opp">${oppScoreAbbr}</span>
+          </div>
+          ${inningBlock}
         </div>
 
         <!-- RIGHT: Opponent -->
         <div class="gp-right">
-          <div class="gp-team-topline">
-            <span class="gp-team-score">${oppRuns}</span>
-            <span class="gp-team-header opp">${oppAbbr}</span>
-          </div>
+          <div class="gp-lineup-name opp">${oppShortName}</div>
           <ul class="gp-lineup">${lineupHTML(oppLineup, oppSide)}</ul>
+          <div class="gp-pitcher-footer">
+            <div class="gp-pitcher-name">${oppPitcherLast}<span class="pos-tag"> P</span></div>
+            ${oppPitchCount != null ? `<div class="gp-pitcher-stat">${oppPitchCount} pitches</div>` : ''}
+          </div>
         </div>
 
       </div>`;
