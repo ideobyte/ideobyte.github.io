@@ -222,6 +222,8 @@
     .standings-table th { font-size: 0.32rem; padding: 0.5rem 0.4rem; }
     .standings-table td { padding: 0.45rem 0.4rem; }
     .team-abbr { font-size: 0.75rem; min-width: unset; }
+    .team-name-cell { gap: 0; }
+    .team-th { width: auto !important; }
     .rank-num  { font-size: 0.5rem; }
     .record    { font-size: 0.58rem; }
     .pct       { font-size: 0.52rem; }
@@ -233,7 +235,7 @@
   }
 </style>
 <div class="top-bar">
-  <a class="home-btn" href="https://ideo.zip">← Home</a>
+  <a class="home-btn" href="index.html">← Home</a>
 </div>
 <div class="header">
   <div class="header-eyebrow">San Diego Padres</div>
@@ -260,7 +262,7 @@
   <table class="standings-table">
     <thead>
       <tr>
-        <th style="width:35%">Team</th>
+        <th class="team-th" style="width:35%">Team</th>
         <th class="num">W</th>
         <th class="num">L</th>
         <th class="num">PCT</th>
