@@ -267,8 +267,8 @@
       text-transform: uppercase;
     }
 
-    /* ── Custom cursor ── */
-    * { cursor: none !important; }
+    /* ── Custom cursor (desktop only, applied via JS) ── */
+    body.custom-cursor-active * { cursor: none !important; }
 
     #cursor-dot {
       pointer-events: none;
@@ -362,14 +362,21 @@
                        + ':' + String(f).padStart(2,'0');
     }, 1000 / 30);
 
-    // ── Glowing cursor ──
+    // ── Glowing cursor (desktop only) ──
     const dot = document.getElementById('cursor-dot');
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     let mx = -999, my = -999;
-    document.addEventListener('mousemove', e => {
-      mx = e.clientX; my = e.clientY;
-      dot.style.left = mx + 'px';
-      dot.style.top  = my + 'px';
-    });
+
+    if (!isMobile) {
+      document.body.classList.add('custom-cursor-active');
+      document.addEventListener('mousemove', e => {
+        mx = e.clientX; my = e.clientY;
+        dot.style.left = mx + 'px';
+        dot.style.top  = my + 'px';
+      });
+    } else {
+      dot.style.display = 'none';
+    }
 
     // ── Grid canvas ──
     const canvas = document.getElementById('grid-canvas');
@@ -450,7 +457,6 @@
     }
     drawGrid();
   </script>
-  
 
 </body>
 </html>
