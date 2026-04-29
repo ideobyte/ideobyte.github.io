@@ -676,7 +676,7 @@ async function fetchNLWest(){
             <span class="game-scoreline">${scoreStr}</span>
           </div>
           <div class="game-sub">${inningStr}</div>`;
-      } else if(g.state==='Final'){
+      } else if(g.state==='Final' && g.detailedState.toLowerCase().includes('final')){
         const won=myRuns>oppRuns;
         const myColor  = won ? 'var(--cream)' : 'var(--no)';
         const oppColor = won ? 'var(--no)'   : 'var(--cream)';
