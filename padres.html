@@ -215,6 +215,7 @@
 
   /* ── Mobile standings ── */
   @media (max-width: 600px) {
+    .gp-body { justify-content: center; }
     .team-full { display: none; }
     .standings-table th.hide-mobile,
     .standings-table td.hide-mobile { display: none; }
@@ -303,12 +304,20 @@
     margin-bottom: 0.6rem; text-align: center;
     text-transform: uppercase;
   }
-  @media (max-width: 700px) {
+  /* CSS: narrow screens OR touch/pointer devices (phones/tablets) */
+  @media (max-width: 700px), (pointer: coarse) and (max-width: 1024px) {
     .bottom-row { flex-direction: column; }
     .bottom-left, .bottom-right { width: 100%; }
-    .gp-left, .gp-right { display: none; }
-    .gp-mid { flex: 1; padding: 0; }
+    .gp-left, .gp-right { display: none !important; }
+    .gp-mid { flex: 1 !important; padding: 0.6rem !important; }
   }
+  /* JS-applied class for phones detected via userAgent */
+  body.is-phone .gp-left,
+  body.is-phone .gp-right { display: none !important; }
+  body.is-phone .gp-mid { flex: 1 !important; padding: 0.6rem !important; }
+  body.is-phone .bottom-row { flex-direction: column; }
+  body.is-phone .bottom-left,
+  body.is-phone .bottom-right { width: 100%; }
 
   /* ── Game Panel ── */
   .game-panel {
@@ -766,6 +775,14 @@ async function render(){
     });
   });
 }
+
+/* ── Phone detection ── */
+(function() {
+  const ua = navigator.userAgent || '';
+  const isPhone = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
+    || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+  if (isPhone) document.body.classList.add('is-phone');
+})();
 
 render();
 
