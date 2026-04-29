@@ -79,6 +79,7 @@
     border: 2px solid var(--gold); border-radius: 6px;
     position: relative; z-index: 1; overflow: hidden;
     animation: fadeUp 0.5s ease 0.25s both; margin-bottom: 1.6rem;
+    flex: 1;
   }
   .panel-corner { position: absolute; width: 0.53rem; height: 0.53rem; border-color: var(--gold-bright); border-style: solid; }
   .panel-corner.tl { top:.31rem; left:.31rem;   border-width:1.5px 0 0 1.5px; }
@@ -225,7 +226,7 @@
 <style>
   .bottom-row {
     display: flex;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 1rem;
     width: 100%;
     max-width: 73.33rem;
@@ -255,7 +256,10 @@
     padding: 1rem 1rem 0.9rem;
     position: relative;
     width: 100%;
+    flex: 1;
     margin-bottom: 1.6rem;
+    display: flex;
+    flex-direction: column;
   }
   @media (max-width: 700px) { .game-panel { width: 100%; } }
 
@@ -266,81 +270,42 @@
   .gpc.br{bottom:.31rem;right:.31rem;border-width:0 1.5px 1.5px 0}
 
   /* ── Game panel inner layout ── */
-  .gp-body { display:flex; gap:0; height:100%; }
+  .gp-body { display:flex; gap:0; align-items:stretch; flex:1; }
 
-  /* Left column — Padres lineup */
-  .gp-left {
-    flex:1; min-width:0;
-    display:flex; flex-direction:column;
-    border-right:1px solid rgba(200,146,42,0.2);
-    padding-right:0.7rem;
-  }
+  /* Three equal columns */
+  .gp-left, .gp-mid, .gp-right { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .gp-left  { border-right:1px solid rgba(200,146,42,0.2); padding-right:0.7rem; }
+  .gp-mid   { align-items:center; padding:0 0.6rem; }
+  .gp-right { border-left:1px solid rgba(200,146,42,0.2); padding-left:0.7rem; text-align:right; }
 
-  /* Middle column — score/diamond/outs */
-  .gp-mid {
-    flex-shrink:0; width:7rem;
-    display:flex; flex-direction:column;
-    align-items:center;
-    padding:0 0.6rem;
-  }
-
-  /* Right column — opponent lineup */
-  .gp-right {
-    flex:1; min-width:0;
-    display:flex; flex-direction:column;
-    border-left:1px solid rgba(200,146,42,0.2);
-    padding-left:0.7rem;
-    text-align:right;
-  }
-
-  /* Team header inside lineup columns */
-  .gp-team-header {
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1.1rem; letter-spacing:0.08rem;
-    line-height:1; margin-bottom:0.18rem;
-  }
+  .gp-team-header { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; letter-spacing:0.08rem; line-height:1; margin-bottom:0.35rem; }
   .gp-team-header.padres { color:var(--gold-bright); }
   .gp-team-header.opp    { color:var(--cream); }
+  .gp-team-score { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; line-height:1; color:var(--cream); }
+  .gp-team-topline { display:flex; align-items:baseline; gap:0.45rem; margin-bottom:0.35rem; }
+  .gp-right .gp-team-topline { justify-content:flex-end; }
 
-  .gp-team-score {
-    font-family:'Bebas Neue',sans-serif;
-    font-size:2rem; line-height:1;
-    color:var(--cream); margin-bottom:0.35rem;
-  }
-
-  /* Lineup list */
+  /* Lineup — bigger and full cream */
   .gp-lineup { list-style:none; flex:1; }
-  .gp-lineup li {
-    font-size:0.48rem; line-height:1.55;
-    color:var(--cream-muted);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
+  .gp-lineup li { font-size:0.6rem; line-height:1.7; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gp-lineup li.current-batter { color:var(--gold-bright); font-weight:700; }
-  .gp-lineup li .order-num { color:rgba(200,146,42,0.45); font-size:0.4rem; margin-right:0.2rem; }
-  .gp-lineup li .pos-tag { font-size:0.36rem; color:rgba(200,146,42,0.5); margin-left:0.2rem; }
+  .gp-lineup li .order-num { color:rgba(200,146,42,0.5); font-size:0.45rem; margin-right:0.2rem; }
+  .gp-lineup li .pos-tag { font-size:0.4rem; color:rgba(200,146,42,0.55); margin-left:0.2rem; }
 
-  /* Middle score + status */
+  /* Middle status */
   .gp-inning-block { text-align:center; margin-bottom:0.3rem; }
   .gp-half-arrow  { font-size:0.55rem; color:var(--gold-bright); line-height:1; }
   .gp-inning-num  { font-family:'Bebas Neue',sans-serif; font-size:1.0rem; color:var(--cream); line-height:1; letter-spacing:0.05rem; }
   .gp-inning-word { font-size:0.33rem; letter-spacing:0.18rem; color:var(--cream-muted); text-transform:uppercase; }
 
-  .gp-live-badge {
-    display:flex; align-items:center; gap:0.2rem;
-    font-size:0.38rem; letter-spacing:0.12rem;
-    color:var(--gold-bright); margin-bottom:0.35rem;
-    justify-content:center;
-  }
+  .gp-live-badge { display:flex; align-items:center; gap:0.2rem; font-size:0.38rem; letter-spacing:0.12rem; color:var(--gold-bright); margin-bottom:0.1rem; justify-content:center; }
+  .gp-warmup-badge { display:flex; align-items:center; gap:0.2rem; font-size:0.38rem; letter-spacing:0.12rem; color:var(--cream-muted); margin-bottom:0.1rem; justify-content:center; }
 
-  .gp-divider { height:1px; background:rgba(200,146,42,0.2); margin:0.45rem 0; width:100%; }
+  .gp-divider { height:1px; background:rgba(200,146,42,0.2); margin:0.2rem 0; width:100%; }
 
   /* Diamond */
-  .gp-diamond { position:relative; width:5rem; height:5rem; flex-shrink:0; margin:0.2rem 0; }
-  .base {
-    position:absolute; width:1rem; height:1rem;
-    border:1.5px solid rgba(200,146,42,0.35); background:transparent;
-    transition:background 0.2s, border-color 0.2s;
-  }
+  .gp-diamond { position:relative; width:5rem; height:5rem; flex-shrink:0; margin:0.05rem 0; }
+  .base { position:absolute; width:1rem; height:1rem; border:1.5px solid rgba(200,146,42,0.35); background:transparent; transition:background 0.2s, border-color 0.2s; }
   .base.on { background:var(--gold-bright); border-color:var(--gold-bright); }
   .base.home   { bottom:0.1rem; left:50%; transform:translateX(-50%) rotate(45deg); }
   .base.first  { right:0.1rem;  top:50%;  transform:translateY(-50%) rotate(45deg); }
@@ -353,18 +318,30 @@
   .base-line.top-right { top:14%; right:22%; transform:rotate(-45deg); transform-origin:top center; }
 
   /* Outs */
-  .gp-outs-col { display:flex; flex-direction:column; align-items:center; gap:0.25rem; margin-top:0.3rem; }
+  .gp-outs-col { display:flex; flex-direction:column; align-items:center; gap:0.2rem; margin-top:0.1rem; }
   .gp-outs-label { font-size:0.33rem; letter-spacing:0.18rem; color:var(--cream-muted); text-transform:uppercase; }
   .outs-pips { display:flex; gap:0.25rem; }
   .out-pip { width:0.55rem; height:0.55rem; border-radius:50%; border:1.5px solid rgba(200,146,42,0.35); background:transparent; transition:background 0.2s; }
   .out-pip.on { background:var(--no); border-color:var(--no); }
 
-  /* Pitcher/batter strip at bottom of mid column */
-  .gp-matchup { margin-top:0.4rem; width:100%; }
-  .gp-matchup-row { display:flex; flex-direction:column; align-items:center; margin-bottom:0.25rem; }
-  .gp-matchup-label { font-size:0.3rem; letter-spacing:0.15rem; color:var(--cream-muted); text-transform:uppercase; }
-  .gp-matchup-name  { font-family:'Bebas Neue',sans-serif; font-size:0.55rem; color:var(--cream); letter-spacing:0.02rem; text-align:center; line-height:1.1; }
-  .gp-matchup-stat  { font-size:0.3rem; color:var(--cream-muted); }
+  /* Pitcher/batter — pushed to bottom of mid column */
+  .gp-matchup { margin-top:auto; padding-top:0.5rem; width:100%; }
+
+  /* Three-cell row: pitcher | inning | batter */
+  .gp-matchup-trio { display:flex; align-items:center; gap:0.2rem; width:100%; }
+  .gp-matchup-cell { flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; }
+  .gp-matchup-cell-right { align-items:flex-end; text-align:right; }
+
+  /* Center inning block inside trio */
+  .gp-matchup-inning { flex-shrink:0; display:flex; flex-direction:column; align-items:center; padding:0 0.3rem; }
+  .gp-half-arrow-sm { font-size:0.55rem; color:var(--gold-bright); line-height:1; }
+  .gp-inning-big { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; color:var(--cream); line-height:1; letter-spacing:0.05rem; }
+  .gp-count-big { font-family:'Bebas Neue',sans-serif; font-size:0.9rem; color:var(--gold-bright); line-height:1.2; letter-spacing:0.05rem; }
+
+  .gp-matchup-row { display:flex; flex-direction:column; align-items:center; margin-bottom:0.3rem; }
+  .gp-matchup-label { font-size:0.32rem; letter-spacing:0.15rem; color:var(--cream-muted); text-transform:uppercase; }
+  .gp-matchup-name  { font-family:'Bebas Neue',sans-serif; font-size:0.65rem; color:var(--cream); letter-spacing:0.02rem; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .gp-matchup-stat  { font-size:0.32rem; color:var(--cream-muted); }
 
   /* next game */
   .gp-next { text-align:center; padding:0.8rem 0; width:100%; }
@@ -583,7 +560,7 @@ async function fetchNLWest(){
       const homeAbbr = g.teams?.home?.team?.abbreviation || ID_TO_ABBR[homeId] || '???';
       const awayAbbr = g.teams?.away?.team?.abbreviation || ID_TO_ABBR[awayId] || '???';
 
-      const info={state,localTime,homeId,awayId,homeRuns,awayRuns,inning,half,homeAbbr,awayAbbr};
+      const info={state,detailedState:g.status?.detailedState??'',localTime,homeId,awayId,homeRuns,awayRuns,inning,half,homeAbbr,awayAbbr};
       if(NL_WEST_IDS.has(homeId)) todayGames[homeId]=info;
       if(NL_WEST_IDS.has(awayId)) todayGames[awayId]=info;
     }
@@ -622,17 +599,31 @@ async function fetchNLWest(){
       const vsAt    = isHome ? 'vs' : '@';
 
       if(g.state==='Live'){
-        const inningStr=g.inning?`${g.half??''} ${g.inning}${suffix(g.inning)}`:'Live';
+        const isWarmup = g.detailedState.toLowerCase().includes('warm')
+                      || (!g.inning && !g.half)
+                      || (g.inning === 1 && !g.half);
+        const inningStr = isWarmup
+          ? 'Warming Up'
+          : g.inning ? `${g.half??''} ${g.inning}${suffix(g.inning)}` : 'Live';
+        const scoreStr = isWarmup
+          ? `${myAbbr} – ${oppAbbr}`
+          : `${myAbbr} ${myRuns} – ${oppRuns} ${oppAbbr}`;
         gameCell=`
           <div class="game-live">
             <span class="live-dot"></span>
-            <span class="game-scoreline">${myAbbr} ${myRuns} – ${oppRuns} ${oppAbbr}</span>
+            <span class="game-scoreline">${scoreStr}</span>
           </div>
           <div class="game-sub">${inningStr}</div>`;
       } else if(g.state==='Final'){
         const won=myRuns>oppRuns;
+        const myColor  = won ? 'var(--cream)' : 'var(--no)';
+        const oppColor = won ? 'var(--no)'   : 'var(--cream)';
         gameCell=`
-          <div class="game-scoreline ${won?'final-w':'final-l'}">${myAbbr} ${myRuns} – ${oppRuns} ${oppAbbr}</div>
+          <div class="game-scoreline">
+            <span style="color:${myColor}">${myAbbr} ${myRuns}</span>
+            <span style="color:var(--cream-muted)"> – </span>
+            <span style="color:${oppColor}">${oppRuns} ${oppAbbr}</span>
+          </div>
           <div class="game-sub">Final</div>`;
       } else {
         gameCell=`
@@ -704,19 +695,54 @@ async function render(){
       :`${awayLabel} ${awayR} — ${homeR} ${homeLabel}`;
   }
 
-  fetchNLWest().catch(err=>{
-    document.getElementById('standingsBody').innerHTML=
-      `<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--no);font-size:0.44rem">Error loading standings: ${err.message}</td></tr>`;
-  });
-
-  fetchPadresGame().catch(err=>{
-    document.getElementById('gamePanel').innerHTML=
-      `<div class="gpc tl"></div><div class="gpc tr"></div><div class="gpc bl"></div><div class="gpc br"></div>
-       <div style="text-align:center;padding:0.8rem;color:var(--no);font-size:0.4rem">Error: ${err.message}</div>`;
+  // After both panels load, lock both to standingsPanel height
+  Promise.all([
+    fetchNLWest().catch(err=>{
+      document.getElementById('standingsBody').innerHTML=
+        `<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--no);font-size:0.44rem">Error loading standings: ${err.message}</td></tr>`;
+    }),
+    fetchPadresGame().catch(err=>{
+      document.getElementById('gamePanel').innerHTML=
+        `<div class="gpc tl"></div><div class="gpc tr"></div><div class="gpc bl"></div><div class="gpc br"></div>
+         <div style="text-align:center;padding:0.8rem;color:var(--no);font-size:0.4rem">Error: ${err.message}</div>`;
+    })
+  ]).then(() => {
+    // Small defer to let DOM paint
+    requestAnimationFrame(() => {
+      const standings = document.querySelector('.nlwest-panel');
+      const gamePanel = document.getElementById('gamePanel');
+      if (!standings || !gamePanel) return;
+      // Use standings height as the fixed height for both
+      const h = standings.getBoundingClientRect().height;
+      if (h > 0) {
+        standings.style.height = h + 'px';
+        standings.style.overflowY = 'auto';
+        gamePanel.style.height = h + 'px';
+        gamePanel.style.overflowY = 'hidden';
+      }
+    });
   });
 }
 
 render();
+
+/* ── Auto-refresh game panel every 15s when a game is live ── */
+let _gamePollInterval = null;
+
+function startGamePolling() {
+  if (_gamePollInterval) return; // already running
+  _gamePollInterval = setInterval(async () => {
+    try {
+      const isStillLive = await fetchPadresGame();
+      // fetchPadresGame returns true if live, false/undefined if not
+      if (!isStillLive) stopGamePolling();
+    } catch (e) { /* silent — panel already shows error from fetchPadresGame */ }
+  }, 15000);
+}
+
+function stopGamePolling() {
+  if (_gamePollInterval) { clearInterval(_gamePollInterval); _gamePollInterval = null; }
+}
 
 /* ── Padres live game / next game panel ── */
 async function fetchPadresGame() {
@@ -730,6 +756,7 @@ async function fetchPadresGame() {
   const liveGame  = games.find(g => g.status.abstractGameState === 'Live');
 
   if (liveGame) {
+    startGamePolling(); // kick off or keep polling
     // Fetch live feed + boxscore in parallel
     const [feedRes, boxRes] = await Promise.all([
       fetch(`https://statsapi.mlb.com/api/v1.1/game/${liveGame.gamePk}/feed/live`),
@@ -744,11 +771,16 @@ async function fetchPadresGame() {
     const offense   = linescore.offense ?? {};
     const defense   = linescore.defense ?? {};
 
+    // Warmup = game is "Live" but no pitches have been thrown yet
+    // detailedState will be "Warmup" or currentInningOrdinal will be missing
+    const detailedState  = liveGame.status?.detailedState ?? '';
+    const isWarmup       = detailedState.toLowerCase().includes('warm')
+                        || !play.atBatIndex && !play.matchup?.pitcher
+                        || (linescore.currentInning === 1 && !feed.liveData?.plays?.allPlays?.length);
+
     const homeTeamId  = feed.gameData?.teams?.home?.id;
     const padresSide  = homeTeamId === PADRES_ID ? 'home' : 'away';
     const oppSide     = padresSide === 'home' ? 'away' : 'home';
-
-    const padresAbbr  = 'SD';
     const awayId      = feed.gameData?.teams?.away?.id;
     const oppAbbr     = ID_TO_ABBR[padresSide === 'home' ? awayId : homeTeamId] ?? '???';
 
@@ -757,8 +789,8 @@ async function fetchPadresGame() {
     const padresRuns  = padresSide === 'home' ? homeRuns : awayRuns;
     const oppRuns     = padresSide === 'home' ? awayRuns : homeRuns;
 
-    const inning      = linescore.currentInning ?? '?';
-    const half        = linescore.inningHalf ?? '';
+    const inning      = linescore.currentInning ?? 1;
+    const half        = linescore.inningHalf ?? 'Top';
     const outs        = linescore.outs ?? 0;
     const onFirst     = !!offense.first;
     const onSecond    = !!offense.second;
@@ -769,7 +801,16 @@ async function fetchPadresGame() {
     const pitchCount     = matchup.pitchCount != null ? `${matchup.pitchCount} pitches` : '';
     const batterCount    = play.count ? `${play.count.balls}-${play.count.strikes}` : '';
 
-    // Build batting orders from boxscore — 9 batters each
+    // Returns last name respecting Jr./Sr./II/III/IV suffixes
+    function lastName(fullName) {
+      const parts = fullName.split(' ');
+      const suffixes = ['jr.','sr.','ii','iii','iv','v'];
+      if (parts.length >= 3 && suffixes.includes(parts[parts.length - 1].toLowerCase())) {
+        return parts[parts.length - 2] + ' ' + parts[parts.length - 1];
+      }
+      return parts[parts.length - 1];
+    }
+
     function getLineup(side) {
       const batters  = box.teams[side].batters ?? [];
       const players  = box.teams[side].players ?? {};
@@ -777,48 +818,83 @@ async function fetchPadresGame() {
         const p    = players[`ID${pid}`] ?? {};
         const name = p.person?.fullName ?? `Player ${pid}`;
         const pos  = p.position?.abbreviation ?? '';
-        const last = name.split(' ').pop();
+        // Handle suffixes like Jr., Sr., II, III, IV — include them with the last name
+        const parts = name.split(' ');
+        const suffixes = ['jr.','sr.','ii','iii','iv','v'];
+        let last;
+        if (parts.length >= 3 && suffixes.includes(parts[parts.length - 1].toLowerCase())) {
+          last = parts[parts.length - 2] + ' ' + parts[parts.length - 1];
+        } else {
+          last = parts[parts.length - 1];
+        }
         return { num: i + 1, name, last, pos, id: pid };
       });
     }
 
     const padresLineup = getLineup(padresSide);
     const oppLineup    = getLineup(oppSide);
-
-    // Current batter ID
-    const currentBatterName = currentBatter.split(' ').pop();
-
-    const suffix     = n => [,'st','nd','rd'][n] || 'th';
-    const halfArrow  = half.toLowerCase().includes('top') ? '▲' : '▼';
-    const halfWord   = half.toLowerCase().includes('top') ? 'Top' : 'Bot';
+    const currentBatterLast = lastName(currentBatter);
+    const currentPitcherLast = lastName(currentPitcher);
+    const suffix    = n => [,'st','nd','rd'][n] || 'th';
+    const halfArrow = half.toLowerCase().includes('top') ? '▲' : '▼';
+    const halfWord  = half.toLowerCase().includes('top') ? 'Top' : 'Bot';
 
     function lineupHTML(lineup, side) {
+      const isBatting = half.toLowerCase().includes('top') ? side === oppSide : side === padresSide;
       return lineup.map(p => {
-        const isCurrent = p.last === currentBatterName && side === (half.toLowerCase().includes('top') ? oppSide : padresSide);
+        const isCurrent = isBatting && p.last === currentBatterLast && !isWarmup;
         return `<li class="${isCurrent ? 'current-batter' : ''}">
           <span class="order-num">${p.num}.</span>${p.last}<span class="pos-tag">${p.pos}</span>
         </li>`;
       }).join('');
     }
 
+    // Middle column status block
+    const statusBlock = isWarmup
+      ? `<div class="gp-warmup-badge">⚾ Warming Up</div>
+         <div class="gp-inning-block">
+           <div class="gp-inning-num">Pre-Game</div>
+           <div class="gp-inning-word">First Pitch Soon</div>
+         </div>`
+      : `<div class="gp-live-badge"><span class="live-dot"></span> Live</div>`;
+
+    const matchupBlock = isWarmup ? '' : `
+      <div class="gp-divider"></div>
+      <div class="gp-matchup">
+        <div class="gp-matchup-trio">
+          <div class="gp-matchup-cell">
+            <div class="gp-matchup-label">Pitching</div>
+            <div class="gp-matchup-name">${currentPitcherLast}</div>
+            <div class="gp-matchup-stat">${pitchCount}</div>
+          </div>
+          <div class="gp-matchup-inning">
+            <div class="gp-half-arrow-sm">${halfArrow}</div>
+            <div class="gp-inning-big">${inning}${suffix(inning)}</div>
+            <div class="gp-count-big">${batterCount || '0-0'}</div>
+          </div>
+          <div class="gp-matchup-cell gp-matchup-cell-right">
+            <div class="gp-matchup-label">At Bat</div>
+            <div class="gp-matchup-name">${currentBatterLast}</div>
+            <div class="gp-matchup-stat">&nbsp;</div>
+          </div>
+        </div>
+      </div>`;
+
     panel.innerHTML = `${corners}
       <div class="gp-body">
 
         <!-- LEFT: Padres -->
         <div class="gp-left">
-          <div class="gp-team-header padres">${padresAbbr}</div>
-          <div class="gp-team-score">${padresRuns}</div>
+          <div class="gp-team-topline">
+            <span class="gp-team-header padres">SD</span>
+            <span class="gp-team-score">${padresRuns}</span>
+          </div>
           <ul class="gp-lineup">${lineupHTML(padresLineup, padresSide)}</ul>
         </div>
 
         <!-- MIDDLE: game state -->
         <div class="gp-mid">
-          <div class="gp-live-badge"><span class="live-dot"></span> Live</div>
-          <div class="gp-inning-block">
-            <div class="gp-half-arrow">${halfArrow}</div>
-            <div class="gp-inning-num">${inning}${suffix(inning)}</div>
-            <div class="gp-inning-word">${halfWord}</div>
-          </div>
+          ${statusBlock}
           <div class="gp-divider"></div>
           <div class="gp-diamond">
             <div class="base-line left"></div>
@@ -838,33 +914,24 @@ async function fetchPadresGame() {
               <div class="out-pip ${outs >= 3 ? 'on' : ''}"></div>
             </div>
           </div>
-          <div class="gp-divider"></div>
-          <div class="gp-matchup">
-            <div class="gp-matchup-row">
-              <div class="gp-matchup-label">Pitching</div>
-              <div class="gp-matchup-name">${currentPitcher.split(' ').pop()}</div>
-              <div class="gp-matchup-stat">${pitchCount}</div>
-            </div>
-            <div class="gp-matchup-row">
-              <div class="gp-matchup-label">At Bat</div>
-              <div class="gp-matchup-name">${currentBatterName}</div>
-              <div class="gp-matchup-stat">${batterCount}</div>
-            </div>
-          </div>
+          ${matchupBlock}
         </div>
 
         <!-- RIGHT: Opponent -->
         <div class="gp-right">
-          <div class="gp-team-header opp">${oppAbbr}</div>
-          <div class="gp-team-score">${oppRuns}</div>
+          <div class="gp-team-topline">
+            <span class="gp-team-score">${oppRuns}</span>
+            <span class="gp-team-header opp">${oppAbbr}</span>
+          </div>
           <ul class="gp-lineup">${lineupHTML(oppLineup, oppSide)}</ul>
         </div>
 
       </div>`;
-    return;
+    return true; // live game still in progress
   }
 
-  // No live game — find next scheduled game
+  // No live game — stop polling and find next scheduled game
+  stopGamePolling();
   for (let offset = 0; offset <= 10; offset++) {
     const dateStr   = getLocalDateStr(offset);
     const sRes      = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${dateStr}&teamId=${PADRES_ID}&gameType=R`);
@@ -888,11 +955,12 @@ async function fetchPadresGame() {
           <div class="gp-next-time">${timeStr}</div>
           <div class="gp-next-date">${dateLbl}</div>
         </div>`;
-      return;
+      return false;
     }
   }
 
   panel.innerHTML = `${corners}<div class="gp-next"><div class="gp-next-label">No upcoming games found</div></div>`;
+  return false;
 }
 
 /* ── Easter egg: type "wilmyers" anywhere to trigger ── */
