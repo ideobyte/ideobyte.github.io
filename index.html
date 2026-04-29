@@ -410,7 +410,7 @@
         nudgeTimer: Math.floor(Math.random() * NUDGE_INT)
       };
     }
-    const balls = Array.from({ length: NUM_BALLS }, makeBall);
+    const balls = isMobile ? [] : Array.from({ length: NUM_BALLS }, makeBall);
 
     // ── Grid canvas ──
     const canvas = document.getElementById('grid-canvas');
@@ -601,7 +601,9 @@
 
       requestAnimationFrame(drawBall);
     }
-    drawBall();
+    if (!isMobile) {
+      drawBall();
+    }
   </script>
 
 </body>
