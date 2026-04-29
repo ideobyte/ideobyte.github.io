@@ -73,6 +73,20 @@
 
   .matchup-line { font-size: 0.44rem; letter-spacing: 0.09rem; color: var(--cream-muted); margin-top: 0.4rem; text-align: center; position: relative; z-index: 1; }
 
+  .promo-heading {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.25rem;
+    color: var(--gold-bright);
+    text-align: center;
+    width: 100%;
+    max-width: 73.33rem;
+    position: relative;
+    z-index: 1;
+    margin: 1.4rem 0 0.8rem;
+    animation: fadeUp 0.5s ease 0.15s both;
+  }
+
   .section-divider {
     width: 100%; max-width: 73.33rem; margin: 1.8rem 0 1.2rem;
     position: relative; z-index: 1; display: flex; align-items: center; gap: 0.8rem;
@@ -227,6 +241,42 @@
   <div class="header-divider"></div>
 </div>
 
+<div class="bottom-row">
+  <div class="bottom-left">
+    <div class="bottom-label">Padres Game</div>
+    <div class="game-panel" id="gamePanel">
+      <div class="gpc tl"></div><div class="gpc tr"></div>
+      <div class="gpc bl"></div><div class="gpc br"></div>
+      <div class="gp-loading">Loading ▋</div>
+    </div>
+  </div>
+
+  <div class="bottom-right">
+    <div class="bottom-label">NL West Standings</div>
+    <div class="nlwest-panel">
+  <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
+  <div class="panel-corner bl"></div><div class="panel-corner br"></div>
+  <table class="standings-table">
+    <thead>
+      <tr>
+        <th>Team</th>
+        <th class="num">W</th>
+        <th class="num">L</th>
+        <th class="num">PCT</th>
+        <th class="num hide-mobile">GB</th>
+        <th style="text-align:right;padding-right:0.9rem">Today's Game</th>
+      </tr>
+    </thead>
+    <tbody id="standingsBody">
+      <tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--cream-muted);font-size:0.44rem">Loading standings...</td></tr>
+    </tbody>
+  </table>
+</div><!-- end nlwest-panel -->
+  </div><!-- end bottom-right -->
+</div><!-- end bottom-row -->
+
+<div class="promo-heading">Yesterday's Promo Results</div>
+
 <div class="grid" id="grid"></div>
 <div class="matchup-line" id="matchupLine"></div>
 
@@ -262,7 +312,7 @@
   .game-panel {
     background: var(--brown-mid);
     border: 2px solid var(--gold); border-radius: 6px;
-    padding: 1rem 1rem 0.9rem;
+    padding: 0.5rem 1rem 0.9rem;
     position: relative;
     width: 100%;
     flex: 1;
@@ -295,7 +345,7 @@
   .gp-right .gp-team-topline { justify-content:flex-end; }
 
   /* Lineup — bigger and full cream */
-  .gp-lineup { list-style:none; flex:1; }
+  .gp-lineup { list-style:none; flex:0; }
   .gp-lineup li { font-size:0.6rem; line-height:1.7; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gp-lineup li.current-batter { color:var(--gold-bright); font-weight:700; }
   .gp-lineup li .order-num { color:rgba(200,146,42,0.5); font-size:0.45rem; margin-right:0.2rem; }
@@ -349,7 +399,7 @@
   /* Team name above lineup */
   .gp-lineup-name {
     font-family:'Bebas Neue',sans-serif; font-size:0.65rem;
-    letter-spacing:0.12rem; margin-bottom:0.15rem;
+    letter-spacing:0.12rem; margin-bottom:0.05rem;
   }
   .gp-lineup-name.padres { color:var(--gold-bright); }
   .gp-lineup-name.opp    { color:var(--cream); }
@@ -362,7 +412,7 @@
   .gp-count-big  { font-family:'Bebas Neue',sans-serif; font-size:0.9rem; color:var(--gold-bright); line-height:1.2; letter-spacing:0.05rem; }
 
   /* Pitcher footer at bottom of lineup columns */
-  .gp-pitcher-footer { margin-top:auto; padding-top:0; border-top:1px solid rgba(200,146,42,0.2); }
+  .gp-pitcher-footer { padding-top:0; border-top:1px solid rgba(200,146,42,0.2); }
   .gp-pitcher-name  { font-size:0.6rem; color:var(--cream); line-height:1.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gp-pitcher-name .pos-tag { font-family:'IBM Plex Mono',monospace; font-size:0.4rem; color:rgba(200,146,42,0.55); margin-left:0.2rem; }
   .gp-right .gp-pitcher-name .pos-tag { margin-left:0; margin-right:0.2rem; }
@@ -377,41 +427,6 @@
   .gp-next-date  { font-size:0.42rem; color:var(--cream-muted); letter-spacing:0.1rem; margin-top:0.2rem; }
   .gp-loading    { font-size:0.44rem; letter-spacing:0.2rem; color:var(--gold-bright); animation:blink 0.9s step-end infinite; text-align:center; padding:0.8rem 0; }
 </style>
-
-<div class="bottom-row">
-  <div class="bottom-left">
-    <div class="bottom-label">Padres Game</div>
-    <div class="game-panel" id="gamePanel">
-      <div class="gpc tl"></div><div class="gpc tr"></div>
-      <div class="gpc bl"></div><div class="gpc br"></div>
-      <div class="gp-loading">Loading ▋</div>
-    </div>
-  </div>
-
-  <div class="bottom-right">
-    <div class="bottom-label">NL West Standings</div>
-    <div class="nlwest-panel">
-  <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
-  <div class="panel-corner bl"></div><div class="panel-corner br"></div>
-  <table class="standings-table">
-    <thead>
-      <tr>
-        <th>Team</th>
-        <th class="num">W</th>
-        <th class="num">L</th>
-        <th class="num">PCT</th>
-        <th class="num hide-mobile">GB</th>
-        <th style="text-align:right;padding-right:0.9rem">Today's Game</th>
-      </tr>
-    </thead>
-    <tbody id="standingsBody">
-      <tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--cream-muted);font-size:0.44rem">Loading standings...</td></tr>
-    </tbody>
-  </table>
-</div><!-- end nlwest-panel -->
-  </div><!-- end bottom-right -->
-</div><!-- end bottom-row -->
-
 <script>
 const PADRES_ID = 135;
 
@@ -1004,7 +1019,6 @@ async function fetchPadresGame() {
         <!-- MIDDLE: game state -->
         <div class="gp-mid">
           ${statusBlock}
-          <div class="gp-divider"></div>
           <div class="gp-diamond">${diamondSVG(onFirst, onSecond, onThird)}</div>
           <div class="gp-outs-col">
             <div class="gp-outs-label">Outs</div>
