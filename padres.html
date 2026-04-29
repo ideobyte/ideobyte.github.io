@@ -525,6 +525,78 @@ async function render(){
 }
 
 render();
+
+/* ── Easter egg: type "wilmyers" anywhere to trigger ── */
+(function() {
+  const SECRET = 'wilmyers';
+  let buffer = '';
+
+  document.addEventListener('keydown', e => {
+    if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    buffer += e.key.toLowerCase();
+    if (buffer.length > SECRET.length) buffer = buffer.slice(-SECRET.length);
+    if (buffer === SECRET) { buffer = ''; triggerWilmyers(); }
+  });
+
+  function triggerWilmyers() {
+    if (document.getElementById('wilmyers-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'wilmyers-overlay';
+    overlay.style.cssText = `
+      position:fixed; inset:0; z-index:9999;
+      background:#000; opacity:0;
+      transition:opacity 2s ease;
+      cursor:pointer;
+    `;
+
+    const video = document.createElement('video');
+    video.src = '/data/wilmyers.mp4';
+    video.style.cssText = `
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit:cover;
+    `;
+    video.volume = 0;
+    video.autoplay = true;
+    video.playsInline = true;
+
+    overlay.appendChild(video);
+    document.body.appendChild(overlay);
+
+    // Fade overlay in + ramp audio up over 2s
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      overlay.style.opacity = '1';
+      let step = 0;
+      const steps = 40, interval = 2000 / steps;
+      const fadeIn = setInterval(() => {
+        video.volume = Math.min(1, ++step / steps);
+        if (step >= steps) clearInterval(fadeIn);
+      }, interval);
+    }));
+
+    video.addEventListener('ended', fadeOut);
+    overlay.addEventListener('click', fadeOut);
+
+    function fadeOut() {
+      video.removeEventListener('ended', fadeOut);
+      overlay.removeEventListener('click', fadeOut);
+
+      // Ramp audio down over 2s
+      let step = 0;
+      const steps = 40, interval = 2000 / steps;
+      const ramp = setInterval(() => {
+        video.volume = Math.max(0, 1 - (++step / steps));
+        if (step >= steps) clearInterval(ramp);
+      }, interval);
+
+      // Fade overlay out over 2s then remove
+      overlay.style.transition = 'opacity 2s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => { video.pause(); overlay.remove(); }, 2000);
+    }
+  }
+})();
 </script>
 </body>
 </html>
