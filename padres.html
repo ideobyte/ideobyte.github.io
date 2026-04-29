@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Padres Promo Tracker</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@800&family=IBM+Plex+Mono:wght@400;700&display=swap');
 
   :root {
     --brown: #2D1A0E;
@@ -50,7 +50,7 @@
   }
 
   .header { text-align: center; margin-bottom: 1.6rem; position: relative; z-index: 1; animation: fadeUp 0.4s ease both; }
-  .header-eyebrow { font-family: 'Bebas Neue', sans-serif; font-size: 0.53rem; letter-spacing: 0.47rem; color: var(--gold-bright); margin-bottom: 0.27rem; }
+  .header-eyebrow { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.53rem; letter-spacing: 0.47rem; color: var(--gold-bright); margin-bottom: 0.27rem; }
   .header-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.27rem; letter-spacing: 0.33rem; line-height: 1; color: var(--cream); }
   .header-date { font-size: 0.49rem; letter-spacing: 0.2rem; color: var(--cream-muted); margin-top: 0.44rem; }
   .header-divider { width: 2.67rem; height: 2px; background: var(--gold); margin: 0.62rem auto 0; }
@@ -239,10 +239,12 @@
   .bottom-left  { display: flex; flex-direction: column; flex-shrink: 0; flex: 1; min-width: 0; }
   .bottom-right { display: flex; flex-direction: column; flex: 1; min-width: 0; }
   .bottom-label {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
     font-size: 0.6rem; letter-spacing: 0.4rem;
     color: var(--gold-bright); white-space: nowrap;
     margin-bottom: 0.6rem; text-align: center;
+    text-transform: uppercase;
   }
   @media (max-width: 700px) {
     .bottom-row { flex-direction: column; }
@@ -499,7 +501,7 @@ function cardHTML(promo, state){
       verdictText=achieved?'Yes ✓':'No ✗';
       subText=achieved?'<span>Promo active today!</span>':'<span>No promo today</span>';
       topContent=promo.isWinCard
-        ?`<div class="result-game-label">${achieved?'Padres Won! 🎉':'Padres Lost :('}</div><div class="result-stat-label">${achieved?'Free Fries! 🍟':'No Free Fries for You'}</div>`
+        ?`<div class="result-game-label">${achieved?'Padres Won!':'Padres Lost :('}</div><div class="result-stat-label">${achieved?'Free Fries! 🍟':'No Free Fries for You'}</div>`
         :`<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
     }
     const liveDot=state.status==='live'?`<span class="live-dot" style="margin-right:.22rem;vertical-align:middle;position:relative;top:-.04rem"></span>`:'';
