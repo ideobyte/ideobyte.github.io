@@ -160,12 +160,17 @@
 <body>
 
 <style>
-  .home-btn {
-    position: fixed;
-    top: 0.8rem;
-    left: 0.8rem;
-    z-index: 100;
+  .top-bar {
+    width: 100%;
+    max-width: 73.33rem;
     display: flex;
+    align-items: center;
+    padding-bottom: 0.6rem;
+    position: relative;
+    z-index: 10;
+  }
+  .home-btn {
+    display: inline-flex;
     align-items: center;
     gap: 0.3rem;
     background: none;
@@ -184,8 +189,29 @@
     background: rgba(200,146,42,0.1);
     border-color: var(--gold-bright);
   }
+
+  /* ── Mobile standings ── */
+  @media (max-width: 600px) {
+    .team-full { display: none; }
+    .standings-table th.hide-mobile,
+    .standings-table td.hide-mobile { display: none; }
+    .standings-table th { font-size: 0.32rem; padding: 0.5rem 0.4rem; }
+    .standings-table td { padding: 0.45rem 0.4rem; }
+    .team-abbr { font-size: 0.75rem; min-width: unset; }
+    .rank-num  { font-size: 0.5rem; }
+    .record    { font-size: 0.58rem; }
+    .pct       { font-size: 0.52rem; }
+    .gb        { font-size: 0.52rem; }
+    .game-scoreline { font-size: 0.55rem; }
+    .game-sub       { font-size: 0.42rem; }
+    .game-time      { font-size: 0.48rem; }
+    .next-game-cell { min-width: unset; padding-right: 0.5rem; }
+  }
 </style>
-<a class="home-btn" href="index.html">← Home</a>
+<div class="top-bar">
+  <a class="home-btn" href="index.html">← Home</a>
+</div>
+<div class="header">
   <div class="header-eyebrow">San Diego Padres</div>
   <div class="header-title">Promo Tracker</div>
   <div class="header-date" id="headerDate"></div>
@@ -212,7 +238,7 @@
         <th class="num">W</th>
         <th class="num">L</th>
         <th class="num">PCT</th>
-        <th class="num">GB</th>
+        <th class="num hide-mobile">GB</th>
         <th style="text-align:right;padding-right:0.9rem">Today's Game</th>
       </tr>
     </thead>
@@ -466,7 +492,7 @@ async function fetchNLWest(){
         <td class="num"><div class="record">${rec.w}</div></td>
         <td class="num"><div class="record">${rec.l}</div></td>
         <td class="num"><div class="pct">${pct}</div></td>
-        <td class="num"><div class="gb">${gb}</div></td>
+        <td class="num hide-mobile"><div class="gb">${gb}</div></td>
         <td class="next-game-cell">${gameCell}</td>
       </tr>`;
   });
