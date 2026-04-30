@@ -1190,6 +1190,8 @@ if (!isMobile) {
     dot.style.left = e.clientX + 'px';
     dot.style.top  = e.clientY + 'px';
   });
+  document.documentElement.addEventListener('mouseleave', () => { dot.style.display = 'none'; });
+  document.documentElement.addEventListener('mouseenter', () => { dot.style.display = ''; });
 } else {
   dot.style.display = 'none';
 }

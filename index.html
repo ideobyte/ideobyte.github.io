@@ -1084,6 +1084,8 @@
       dot.style.left = mx + 'px';
       dot.style.top  = my + 'px';
     });
+    document.documentElement.addEventListener('mouseleave', () => { dot.style.display = 'none'; });
+    document.documentElement.addEventListener('mouseenter', () => { dot.style.display = ''; });
   } else {
     dot.style.display = 'none';
   }

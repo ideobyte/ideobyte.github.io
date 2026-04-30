@@ -988,6 +988,8 @@ if (!isMobile) {
     cursorDot.style.left = e.clientX + 'px';
     cursorDot.style.top  = e.clientY + 'px';
   });
+  document.documentElement.addEventListener('mouseleave', () => { cursorDot.style.display = 'none'; });
+  document.documentElement.addEventListener('mouseenter', () => { if (!document.pointerLockElement) cursorDot.style.display = 'block'; });
   // Hide dot when pointer is locked (paddle follows mouse, no cursor needed)
   document.addEventListener('pointerlockchange', () => {
     if (document.pointerLockElement) {

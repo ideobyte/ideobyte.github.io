@@ -1,0 +1,22 @@
+Add these two lines inside the if (!isMobile) block, alongside the existing mousemove listener:
+
+document.documentElement.addEventListener('mouseleave', () => { dot.style.display = 'none'; });
+document.documentElement.addEventListener('mouseenter', () => { dot.style.display = ''; });
+
+
+So the full if (!isMobile) block should look like this:
+
+if (!isMobile) {
+  document.body.classList.add('custom-cursor-active');
+  document.addEventListener('mousemove', e => {
+    dot.style.left = e.clientX + 'px';
+    dot.style.top  = e.clientY + 'px';
+  });
+  document.documentElement.addEventListener('mouseleave', () => { dot.style.display = 'none'; });
+  document.documentElement.addEventListener('mouseenter', () => { dot.style.display = ''; });
+} else {
+  dot.style.display = 'none';
+}
+
+
+That's it — nothing else needs to change.
