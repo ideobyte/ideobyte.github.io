@@ -141,7 +141,6 @@
     letter-spacing: 2px;
     animation: logoFlicker 6s infinite;
     line-height: 1;
-    cursor: pointer;
   }
 
   .logo:hover {
@@ -322,7 +321,6 @@
     font-size: 10px;
     letter-spacing: 3px;
     padding: 10px 24px;
-    cursor: pointer;
     transition: all 0.15s;
     text-transform: uppercase;
     margin-bottom: 6px;
@@ -387,11 +385,32 @@
     font-family: 'VT323', monospace;
     font-size: 14px;
   }
+  /* Custom cursor */
+  body.custom-cursor-active,
+  body.custom-cursor-active html { cursor: none !important; }
+  body.custom-cursor-active * { cursor: none !important; }
+
+  #cursor-dot {
+    pointer-events: none;
+    position: fixed;
+    z-index: 200;
+    width: 20px;
+    height: 24px;
+    filter:
+      drop-shadow(0 0 3px rgba(0,255,65,0.95))
+      drop-shadow(0 0 8px rgba(0,255,65,0.45));
+  }
 </style>
 </head>
 <body>
 
 <div class="vignette"></div>
+<div id="cursor-dot">
+  <svg width="20" height="24" viewBox="0 0 20 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 2 L2 20 L6.5 15.5 L10.5 22 L13 21 L9 14.5 L16 14.5 Z"
+          fill="#00ff41" stroke="#003a10" stroke-width="1.2" stroke-linejoin="round"/>
+  </svg>
+</div>
 <div class="noise-lines">
   <div class="noise-line"></div>
   <div class="noise-line"></div>
@@ -432,13 +451,6 @@
       <div class="overlay-title">TETRIS</div>
       <div class="overlay-sub">T-01 // BLOCK DESCENT</div>
       <button class="btn" id="start-btn">[ INITIALIZE ]</button>
-      <div class="controls-list">
-        ← → &nbsp; MOVE<br>
-        ↑ &nbsp;&nbsp;&nbsp;&nbsp; ROTATE<br>
-        ↓ &nbsp;&nbsp;&nbsp;&nbsp; SOFT DROP<br>
-        SPACE &nbsp; HARD DROP<br>
-        P / ESC &nbsp; PAUSE
-      </div>
     </div>
 
     <!-- Pause screen -->
@@ -1166,6 +1178,21 @@ canvas.addEventListener('touchend', e => {
 // Draw blank next canvas only (board not initialized yet)
 nctx.fillStyle = '#010801';
 nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+const dot = document.getElementById('cursor-dot');
+const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  || navigator.maxTouchPoints > 2;
+
+if (!isMobile) {
+  document.documentElement.style.cursor = 'none';
+  document.body.classList.add('custom-cursor-active');
+  document.addEventListener('mousemove', e => {
+    dot.style.left = e.clientX + 'px';
+    dot.style.top  = e.clientY + 'px';
+  });
+} else {
+  dot.style.display = 'none';
+}
 </script>
 </body>
 </html>

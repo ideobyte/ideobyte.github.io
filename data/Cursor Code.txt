@@ -1,0 +1,41 @@
+CSS:
+cssbody.custom-cursor-active * { cursor: none !important; }
+
+#cursor-dot {
+  pointer-events: none;
+  position: fixed;
+  z-index: 200;
+  width: 20px;
+  height: 24px;
+  filter:
+    drop-shadow(0 0 3px rgba(0,255,65,0.95))
+    drop-shadow(0 0 8px rgba(0,255,65,0.45));
+}
+
+
+HTML (place anywhere in <body>):
+html<div id="cursor-dot">
+  <svg width="20" height="24" viewBox="0 0 20 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 2 L2 20 L6.5 15.5 L10.5 22 L13 21 L9 14.5 L16 14.5 Z"
+          fill="#00ff41" stroke="#003a10" stroke-width="1.2" stroke-linejoin="round"/>
+  </svg>
+</div>
+
+
+JS (place before </body>):
+jsconst dot = document.getElementById('cursor-dot');
+const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  || navigator.maxTouchPoints > 2;
+
+if (!isMobile) {
+  document.body.classList.add('custom-cursor-active');
+  document.addEventListener('mousemove', e => {
+    dot.style.left = e.clientX + 'px';
+    dot.style.top  = e.clientY + 'px';
+  });
+} else {
+  dot.style.display = 'none';
+}
+
+One extra thing: if the target page has any cursor: default or cursor: pointer rules elsewhere in its CSS, those will override the none and the old cursor will bleed through. You'd need to remove those too.

@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>BRICKBREAKER</title>
+<title>ideo.zip — brick breaker</title>
 <link rel="icon" type="image/png" href="/data/favicon/main/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/data/favicon/main/favicon.svg" />
 <link rel="shortcut icon" href="/data/favicon/main/favicon.ico" />
@@ -13,8 +13,23 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { width:100%; height:100%; background:#000d00; overflow:hidden; font-family:'Share Tech Mono','Courier New',monospace; }
-body.show-cursor { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpolygon points='2,2 2,16 6,12 9,18 11,17 8,11 14,11' fill='%2300ff00' stroke='%23003300' stroke-width='1'/%3E%3C/svg%3E") 2 2, auto; }
+/* Custom cursor — always hidden on desktop, shown via #cursor-dot */
+body.custom-cursor-active,
+body.custom-cursor-active * { cursor: none !important; }
 body.hide-cursor { cursor: none; }
+
+#cursor-dot {
+  pointer-events: none;
+  position: fixed;
+  z-index: 200;
+  width: 20px;
+  height: 24px;
+  filter:
+    drop-shadow(0 0 3px rgba(0,255,65,0.95))
+    drop-shadow(0 0 8px rgba(0,255,65,0.45));
+  /* Hidden by default until JS confirms non-mobile */
+  display: none;
+}
 #wrap { position:fixed; inset:0; display:flex; flex-direction:column; background:#000d00; }
 #topbar {
   height:24px; flex-shrink:0; display:flex; justify-content:space-between; align-items:center;
@@ -151,7 +166,13 @@ canvas { display:block; position:absolute; top:0; left:0; }
 #startBtn:hover { background:#00ff0015; border-color:#00ff00; }
 </style>
 </head>
-<body class="show-cursor">
+<body>
+<div id="cursor-dot">
+  <svg width="20" height="24" viewBox="0 0 20 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 2 L2 20 L6.5 15.5 L10.5 22 L13 21 L9 14.5 L16 14.5 Z"
+          fill="#00ff41" stroke="#003a10" stroke-width="1.2" stroke-linejoin="round"/>
+  </svg>
+</div>
 <div id="wrap">
   <div id="topbar">
     <a id="homeBtn" href="https://ideo.zip">⌂ ideo.zip</a>
@@ -583,8 +604,7 @@ function initGame() {
   setTimeout(() => {
     overlay.style.display = 'none';
     gameState = 'waiting';
-    document.body.classList.remove('show-cursor');
-    document.body.classList.add('hide-cursor');
+    showDot(false);
     requestPointerLock();
   }, 80);
 }
@@ -680,8 +700,7 @@ function update() {
     updHUD();
     if (lives <= 0) {
       gameState = 'over';
-      document.body.classList.remove('hide-cursor');
-      document.body.classList.add('show-cursor');
+      showDot(true);
       setTimeout(() => {
         showOverlay();
         overlay.querySelector('.glitch').textContent = 'GAME OVER';
@@ -850,16 +869,14 @@ function pauseGame() {
   if (paused || (gameState !== 'playing' && gameState !== 'waiting')) return;
   paused = true;
   pauseOverlay.style.display = 'flex';
-  document.body.classList.remove('hide-cursor');
-  document.body.classList.add('show-cursor');
+  showDot(true);
 }
 
 function resumeGame() {
   if (!paused) return;
   paused = false;
   pauseOverlay.style.display = 'none';
-  document.body.classList.remove('show-cursor');
-  document.body.classList.add('hide-cursor');
+  showDot(false);
   userEscaped = false;
   requestPointerLock();
 }
@@ -951,6 +968,37 @@ function loop() {
   requestAnimationFrame(loop);
 }
 loop();
+</script>
+<script>
+// ── Custom cursor ─────────────────────────────────────────────────────────────
+const cursorDot = document.getElementById('cursor-dot');
+const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  || navigator.maxTouchPoints > 2;
+
+function showDot(visible) {
+  if (isMobile) return;
+  cursorDot.style.display = visible ? 'block' : 'none';
+}
+
+if (!isMobile) {
+  document.body.classList.add('custom-cursor-active');
+  cursorDot.style.display = 'block'; // visible on start screen
+  document.addEventListener('mousemove', e => {
+    cursorDot.style.left = e.clientX + 'px';
+    cursorDot.style.top  = e.clientY + 'px';
+  });
+  // Hide dot when pointer is locked (paddle follows mouse, no cursor needed)
+  document.addEventListener('pointerlockchange', () => {
+    if (document.pointerLockElement) {
+      cursorDot.style.display = 'none';
+    }
+    // Restore handled by showDot(true) calls in pauseGame / game-over
+  });
+} else {
+  cursorDot.style.display = 'none';
+}
+// ─────────────────────────────────────────────────────────────────────────────
 </script>
 </body>
 </html>
