@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <title>ideo.zip — brick breaker</title>
+<link rel="icon" type="image/png" href="/data/favicon/main/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/data/favicon/main/favicon.svg" />
+<link rel="shortcut icon" href="/data/favicon/main/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/data/favicon/main/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="ideo.zip" />
+<link rel="manifest" href="/data/favicon/main/site.webmanifest" />
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -107,6 +113,22 @@ canvas { display:block; position:absolute; top:0; left:0; }
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   background:rgba(0,8,0,0.92);
 }
+#pauseOverlay {
+  position:absolute; inset:0; z-index:21;
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+  background:rgba(0,8,0,0.92);
+}
+#pauseOverlay .glitch { font-size:clamp(20px,4vw,48px); }
+.pause-btn {
+  margin-top:12px; padding:13px 40px;
+  border:1px solid #00ff0055; color:#00ff00;
+  background:transparent; font-family:'Share Tech Mono','Courier New',monospace;
+  font-size:13px; letter-spacing:5px; cursor:pointer;
+  text-decoration:none; text-transform:uppercase;
+  display:block; text-align:center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pause-btn:hover { background:#00ff0015; border-color:#00ff00; }
 .glitch {
   font-family:'Share Tech Mono','Courier New',monospace;
   font-size:clamp(20px,4vw,52px); color:#00ff00;
@@ -146,7 +168,13 @@ canvas { display:block; position:absolute; top:0; left:0; }
         <p class="hint" style="margin-top:16px;">MOVE MOUSE TO CONTROL PADDLE</p>
         <p class="hint">CLICK TO LAUNCH BALL</p>
         <button id="startBtn">[ INITIALIZE ]</button>
-        <a id="ideoLink" href="http://ideo.zip" target="_blank" style="display:none">ideo.zip</a>
+        <a id="ideoLink" href="http://ideo.zip" style="display:none">ideo.zip</a>
+      </div>
+      <div id="pauseOverlay">
+        <div class="glitch">PAUSED</div>
+        <p class="tagline" style="margin-bottom:20px;">— GAME PAUSED —</p>
+        <button id="resumeBtn" class="pause-btn">[ RESUME ]</button>
+        <a href="http://ideo.zip" class="pause-btn" style="margin-top:8px;">ideo.zip</a>
       </div>
     </div>
   </div>
@@ -225,6 +253,9 @@ function brickStartX() { return Math.round((CW - (COLS * brickW() + (COLS-1) * b
 
 let gameState = 'idle';
 let score = 0, hi = 0, lives = 3, level = 1;
+let userEscaped = false;       // true after Escape — suppresses auto re-lock until next click
+let exitedIntentionally = false; // true when WE call exitPointerLock (not the user)
+let paused = false;
 let paddleX = 0, mouseX = 0;
 let balls = [];
 let bricks = [];
@@ -533,6 +564,10 @@ function initGame() {
   paddleX = CW / 2; mouseX = CW / 2;
   particles = []; drops = [];
   paddleWCurrent = PADDLE_W_BASE; paddleWTarget = PADDLE_W_BASE; wideballTimer = 0;
+  userEscaped = false;
+  exitedIntentionally = false;
+  paused = false;
+  pauseOverlay.style.display = 'none';
   document.getElementById('ideoLink').style.display = 'none';
   overlay.querySelector('.glitch').textContent = 'BRICKBREAKER';
   overlay.querySelectorAll('.tagline')[0].textContent = 'BE KIND. REWIND.';
@@ -545,6 +580,7 @@ function initGame() {
     gameState = 'waiting';
     document.body.classList.remove('show-cursor');
     document.body.classList.add('hide-cursor');
+    requestPointerLock();
   }, 80);
 }
 
@@ -553,6 +589,7 @@ function launch() {
   balls[0].vx = 3.75 * (Math.random() > 0.5 ? 1 : -1);
   balls[0].vy = -6.25;
   gameState = 'playing';
+  if (document.pointerLockElement !== gameArea) requestPointerLock();
 }
 
 function updHUD() {
@@ -569,7 +606,7 @@ function update() {
   updateParticles();
   updateDrops();
   updateWideballPowerup();
-  if (!started || gameState === 'idle' || gameState === 'over') return;
+  if (!started || gameState === 'idle' || gameState === 'over' || paused) return;
 
   const PW = paddleWCurrent; // use animated width everywhere this frame
   paddleX += (mouseX - paddleX) * 0.25;
@@ -638,7 +675,7 @@ function update() {
       document.body.classList.remove('hide-cursor');
       document.body.classList.add('show-cursor');
       setTimeout(() => {
-        overlay.style.display = 'flex';
+        showOverlay();
         overlay.querySelector('.glitch').textContent = 'GAME OVER';
         overlay.querySelectorAll('.tagline')[0].textContent = 'SCORE: ' + String(score).padStart(6,'0');
         startBtn.textContent = '[ RETRY ]';
@@ -718,13 +755,101 @@ function draw() {
   }
 }
 
-// Mouse coords relative to gameArea (the square), not the full canvasWrap
+// ── Pause ────────────────────────────────────────────────────────────────────
+const pauseOverlay = document.getElementById('pauseOverlay');
+const resumeBtn    = document.getElementById('resumeBtn');
+
+function pauseGame() {
+  if (paused || (gameState !== 'playing' && gameState !== 'waiting')) return;
+  paused = true;
+  pauseOverlay.style.display = 'flex';
+  document.body.classList.remove('hide-cursor');
+  document.body.classList.add('show-cursor');
+}
+
+function resumeGame() {
+  if (!paused) return;
+  paused = false;
+  pauseOverlay.style.display = 'none';
+  document.body.classList.remove('show-cursor');
+  document.body.classList.add('hide-cursor');
+  userEscaped = false;
+  requestPointerLock();
+}
+
+resumeBtn.addEventListener('click', (e) => {
+  e.stopPropagation(); // don't bubble to gameArea click
+  resumeGame();
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Pointer Lock ─────────────────────────────────────────────────────────────
+function requestPointerLock() {
+  gameArea.requestPointerLock({ unadjustedMovement: true }).catch(() => {
+    // unadjustedMovement not supported everywhere — fall back silently
+    gameArea.requestPointerLock();
+  });
+}
+
+function releasePointerLock() {
+  if (document.pointerLockElement === gameArea) {
+    exitedIntentionally = true;
+    document.exitPointerLock();
+  }
+}
+
+// While locked: accumulate relative movement onto mouseX
+// While unlocked: use absolute position as before
 gameArea.addEventListener('mousemove', e => {
-  const r = gameArea.getBoundingClientRect();
-  mouseX = e.clientX - r.left;
+  if (document.pointerLockElement === gameArea) {
+    mouseX = Math.max(0, Math.min(CW, mouseX + e.movementX));
+  } else {
+    const r = gameArea.getBoundingClientRect();
+    mouseX = e.clientX - r.left;
+  }
 });
 
-gameArea.addEventListener('click', () => { launch(); });
+// Lock on click when game is active; also launch if waiting
+gameArea.addEventListener('click', () => {
+  if (gameState === 'playing' || gameState === 'waiting') {
+    userEscaped = false;
+  exitedIntentionally = false;
+  paused = false;
+  pauseOverlay.style.display = 'none'; // user clicked back in — re-enable lock
+    if (document.pointerLockElement !== gameArea) {
+      requestPointerLock();
+    }
+  }
+  launch();
+});
+
+// Re-lock when pointer lock is lost and game is still running
+document.addEventListener('pointerlockchange', () => {
+  if (document.pointerLockElement === gameArea) {
+    // Lock acquired — clear escaped flag
+    userEscaped = false;
+  exitedIntentionally = false;
+  paused = false;
+  pauseOverlay.style.display = 'none';
+    return;
+  }
+  // Lock was lost. If WE called exitPointerLock (game over etc), exitedIntentionally
+  // will be true. If the user pressed Escape, neither flag is set — treat as userEscaped.
+  if (exitedIntentionally) {
+    exitedIntentionally = false;
+    return;
+  }
+  // Lock dropped without us asking → user pressed Escape
+  userEscaped = true;
+  pauseGame();
+});
+
+// Unlock when overlay is shown (game over / start screen)
+function showOverlay() {
+  overlay.style.display = 'flex';
+  releasePointerLock();
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 document.addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); launch(); }
