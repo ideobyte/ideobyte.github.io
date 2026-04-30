@@ -59,6 +59,7 @@
   }
 
   body {
+    cursor: none;
     background: var(--bg);
     display: flex;
     flex-direction: column;
@@ -186,7 +187,6 @@
       0 0 140px oklch(60% 0.20 142 / 0.2);
     position: relative;
     animation: textflicker 0.01s infinite;
-    cursor: default;
   }
 
   /* Fragment canvas — removed */
@@ -461,7 +461,6 @@
     font-family: 'Share Tech Mono', monospace;
     font-size: 13px;
     letter-spacing: 0.2em;
-    cursor: pointer;
     text-decoration: none;
     box-shadow: 0 0 6px rgba(0,255,65,0.08), inset 0 0 12px rgba(0,255,65,0.03);
     transition: all 0.15s ease;
@@ -536,10 +535,31 @@
     .channel-btn { font-size: 10px; padding: 9px 12px; }
     .top-bar-label { font-size: 8px; letter-spacing: 0.07em; }
   }
+
+  /* ── Custom cursor (desktop only, applied via JS) ── */
+  body.custom-cursor-active * { cursor: none !important; }
+  #cursor-dot {
+    pointer-events: none;
+    position: fixed;
+    z-index: 200;
+    width: 20px;
+    height: 24px;
+    filter:
+      drop-shadow(0 0 3px rgba(0,255,65,0.95))
+      drop-shadow(0 0 8px rgba(0,255,65,0.45));
+  }
 </style>
 
 </head>
 <body>
+
+<div id="cursor-dot">
+  <svg width="20" height="24" viewBox="0 0 20 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 2 L2 20 L6.5 15.5 L10.5 22 L13 21 L9 14.5 L16 14.5 Z"
+          fill="#00ff41" stroke="#003a10" stroke-width="1.2" stroke-linejoin="round"/>
+  </svg>
+</div>
+
 
 <!-- SVG filter for text warp -->
 <svg style="position:absolute;width:0;height:0;overflow:hidden">
@@ -626,8 +646,8 @@
     <span>BRICK BREAKER</span>
     <span class="channel-tag">T-02</span>
   </a>
-  <a class="channel-btn" href="#">
-    <span>COMING SOON</span>
+  <a class="channel-btn" href="tetris">
+    <span>TETRIS</span>
     <span class="channel-tag">T-03</span>
   </a>
 </div>
@@ -1046,4 +1066,26 @@
 </script>
 
 
+
+
+
+<script>
+  // ── Glowing cursor (desktop only) ──
+  const dot = document.getElementById('cursor-dot');
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    || navigator.maxTouchPoints > 2;
+  let mx = -999, my = -999;
+
+  if (!isMobile) {
+    document.body.classList.add('custom-cursor-active');
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      dot.style.left = mx + 'px';
+      dot.style.top  = my + 'px';
+    });
+  } else {
+    dot.style.display = 'none';
+  }
+</script>
 </body></html>
