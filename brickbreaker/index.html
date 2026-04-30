@@ -21,6 +21,11 @@ body.hide-cursor { cursor: none; }
   padding:0 16px; border-bottom:1px solid #00ff0033;
   font-size:11px; color:#00ff0088; letter-spacing:2px;
 }
+#homeBtn {
+  color:#00ff0088; text-decoration:none; letter-spacing:2px; font-size:11px;
+  transition: color 0.15s;
+}
+#homeBtn:hover { color:#00ff00; }
 #canvasWrap {
   flex:1; overflow:hidden;
   display:flex; flex-direction:row; align-items:center; justify-content:center;
@@ -149,7 +154,7 @@ canvas { display:block; position:absolute; top:0; left:0; }
 <body class="show-cursor">
 <div id="wrap">
   <div id="topbar">
-    <span>◆ REC</span>
+    <a id="homeBtn" href="https://ideo.zip">⌂ ideo.zip</a>
     <span>SIGNAL / ARCHIVE / CHANNEL</span>
     <span id="clock">00:00:00</span>
   </div>
@@ -353,8 +358,8 @@ function updateDrops() {
     if (d.y + d.h / 2 >= py && d.y - d.h / 2 <= py + PADDLE_H &&
         d.x >= paddleX - pw / 2 - d.w / 2 && d.x <= paddleX + pw / 2 + d.w / 2) {
       d.caught = true;
-      if (d.type === PU_MULTIBALL) activateMultiball();
-      else if (d.type === PU_WIDEBALL) activateWideball();
+      if (d.type === PU_MULTIBALL) { activateMultiball(); sfxPowerup(); }
+      else if (d.type === PU_WIDEBALL) { activateWideball(); sfxPowerup(); }
     }
   });
   drops = drops.filter(d => !d.caught && d.y < CH + 40);
@@ -638,6 +643,7 @@ function update() {
       const speed = Math.hypot(ball.vx, ball.vy);
       ball.vx = hit * speed * 0.9;
       ball.vy = -Math.sqrt(Math.max(speed * speed - ball.vx * ball.vx, 1));
+      sfxPaddle();
     }
 
     for (const b of bricks) {
@@ -649,6 +655,7 @@ function update() {
         hi = Math.max(hi, score);
         updHUD();
         spawnBrickParticles(b.x, b.y, b.w, b.h);
+        sfxBrick();
         if (b.dropType) spawnDrop(b.x, b.y, b.w, b.h, b.dropType);
         const prevY = ball.y - ball.vy;
         if (prevY + BALL_R <= b.y || prevY - BALL_R >= b.y + b.h) ball.vy *= -1;
@@ -660,6 +667,7 @@ function update() {
     if (ball.y - BALL_R > CH) {
       ball.lost = true;
       spawnDeathParticles(ball.x, CH - 10);
+      sfxDeath();
     }
   }
 
@@ -754,6 +762,85 @@ function draw() {
     });
   }
 }
+
+// ── Audio ────────────────────────────────────────────────────────────────────
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTone(freq, type, duration, gainVal, fadeOut = true) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+    if (fadeOut) gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+function sfxPaddle() {
+  // Short crisp beep — mid frequency square wave
+  playTone(220, 'square', 0.08, 0.18);
+}
+
+// Throttle brick sound so rapid multi-breaks don't stack into noise
+let lastBrickSfx = 0;
+function sfxBrick() {
+  const now = performance.now();
+  if (now - lastBrickSfx < 40) return; // max ~25 sounds/sec
+  lastBrickSfx = now;
+  // Quick high blip — short square pulse with a tiny frequency drop
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.04);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.07);
+  } catch(e) {}
+}
+
+function sfxPowerup() {
+  // Rising arpeggio
+  const notes = [330, 440, 550, 660];
+  notes.forEach((f, i) => {
+    setTimeout(() => playTone(f, 'square', 0.1, 0.1), i * 40);
+  });
+}
+
+function sfxDeath() {
+  // Descending noise burst
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.4);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch(e) {}
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ── Pause ────────────────────────────────────────────────────────────────────
 const pauseOverlay = document.getElementById('pauseOverlay');
