@@ -3,21 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/png" href="/data/favicon/padres/favicon-96x96.png" sizes="96x96" />
-<link rel="icon" type="image/svg+xml" href="/data/favicon/padres/favicon.svg" />
-<link rel="shortcut icon" href="/data/favicon/padres/favicon.ico" />
-<link rel="apple-touch-icon" sizes="180x180" href="/data/favicon/padres/apple-touch-icon.png" />
-<meta name="apple-mobile-web-app-title" content="ideo.zip" />
-<link rel="manifest" href="/data/favicon/padres/site.webmanifest" />
+<link rel="icon" type="image/png" href="/data/favicon/padres/favicon-96x96.png" sizes="96x96">
+<link rel="icon" type="image/svg+xml" href="/data/favicon/padres/favicon.svg">
+<link rel="shortcut icon" href="/data/favicon/padres/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/data/favicon/padres/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="ideo.zip">
+<link rel="manifest" href="/data/favicon/padres/site.webmanifest">
 <title>Padres Dashboard</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@800&family=IBM+Plex+Mono:wght@400;700&display=swap');
 
+<!-- Preconnect to the API host so the first fetch isn't paying for DNS+TLS handshake -->
+<link rel="preconnect" href="https://statsapi.mlb.com" crossorigin>
+<!-- Preconnect for Google Fonts (font CSS + actual font files are on different hosts) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@800&family=IBM+Plex+Mono:wght@400;700&display=swap">
+
+<style>
   @font-face {
     font-family: 'RTDyansBasic';
     src: url('/fonts/RTDyansBasic.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
+    font-display: swap;
   }
 
   :root {
@@ -31,6 +39,11 @@
     --yes: #7EB648;
     --no: #C0392B;
     --live: #E8B84B;
+    --gold-line-strong: rgba(200,146,42,0.3);
+    --gold-line-mid:    rgba(200,146,42,0.25);
+    --gold-line-soft:   rgba(200,146,42,0.2);
+    --gold-line-faint:  rgba(200,146,42,0.15);
+    --gold-line-ghost:  rgba(200,146,42,0.1);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -49,146 +62,49 @@
     overflow-x: hidden;
   }
 
-  body::before {
+  /* Background decorations are non-interactive overlays */
+  body::before, body::after {
     content: '';
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(-50deg, transparent, transparent 55px, rgba(200,146,42,0.06) 55px, rgba(200,146,42,0.06) 57px);
+    position: fixed;
+    inset: 0;
     pointer-events: none;
+  }
+  body::before {
+    background: repeating-linear-gradient(-50deg, transparent, transparent 55px, rgba(200,146,42,0.06) 55px, rgba(200,146,42,0.06) 57px);
   }
   body::after {
-    content: '';
-    position: fixed; inset: 0;
     background: radial-gradient(ellipse at 50% 0%, rgba(200,146,42,0.1) 0%, transparent 60%);
-    pointer-events: none;
   }
 
-  .header { text-align: center; margin-bottom: 1.6rem; position: relative; z-index: 1; animation: fadeUp 0.4s ease both; }
-  .header-eyebrow { font-family: 'RTDyansBasic', sans-serif; font-size: 0.8rem; letter-spacing: 0.2rem; color: var(--gold-bright); margin-bottom: 0.18rem; }
-  .header-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.27rem; letter-spacing: 0.33rem; line-height: 1; color: var(--cream); }
-  .header-date { font-size: 0.49rem; letter-spacing: 0.2rem; color: var(--cream-muted); margin-top: 0.44rem; }
-  .header-divider { width: 2.67rem; height: 2px; background: var(--gold); margin: 0.62rem auto 0; }
-
-  .grid {
-    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.71rem; width: 100%; max-width: 73.33rem;
-    position: relative; z-index: 1; animation: fadeUp 0.5s ease 0.1s both;
+  /* ── Shared corner decorations ───────────────────────────────────
+     The original had three different class names (.panel-corner, .gpc,
+     .card-corner) doing the exact same thing. Unified. */
+  .corner {
+    position: absolute;
+    width: 0.53rem;
+    height: 0.53rem;
+    border-color: var(--gold-bright);
+    border-style: solid;
   }
-  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 520px)  { .grid { grid-template-columns: 1fr; } }
-  @keyframes fadeUp { from { opacity:0; transform:translateY(1.07rem); } to { opacity:1; transform:translateY(0); } }
+  .corner.tl { top: .31rem;    left: .31rem;   border-width: 1.5px 0 0 1.5px; }
+  .corner.tr { top: .31rem;    right: .31rem;  border-width: 1.5px 1.5px 0 0; }
+  .corner.bl { bottom: .31rem; left: .31rem;   border-width: 0 0 1.5px 1.5px; }
+  .corner.br { bottom: .31rem; right: .31rem;  border-width: 0 1.5px 1.5px 0; }
 
-  .matchup-line { font-size: 0.44rem; letter-spacing: 0.09rem; color: var(--cream-muted); margin-top: 0.4rem; text-align: center; position: relative; z-index: 1; }
-
-  .promo-heading {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.1rem;
-    letter-spacing: 0.25rem;
-    color: var(--gold-bright);
+  /* ── Header ────────────────────────────────────────────────── */
+  .header {
     text-align: center;
-    width: 100%;
-    max-width: 73.33rem;
+    margin-bottom: 1.6rem;
     position: relative;
     z-index: 1;
-    margin: 1.4rem 0 0.8rem;
-    animation: fadeUp 0.5s ease 0.15s both;
+    animation: fadeUp 0.4s ease both;
   }
+  .header-eyebrow { font-family: 'RTDyansBasic', sans-serif; font-size: 0.8rem; letter-spacing: 0.2rem; color: var(--gold-bright); margin-bottom: 0.18rem; }
+  .header-title   { font-family: 'Bebas Neue', sans-serif; font-size: 2.27rem; letter-spacing: 0.33rem; line-height: 1; color: var(--cream); }
+  .header-date    { font-size: 0.49rem; letter-spacing: 0.2rem; color: var(--cream-muted); margin-top: 0.44rem; }
+  .header-divider { width: 2.67rem; height: 2px; background: var(--gold); margin: 0.62rem auto 0; }
 
-  .section-divider {
-    width: 100%; max-width: 73.33rem; margin: 1.8rem 0 1.2rem;
-    position: relative; z-index: 1; display: flex; align-items: center; gap: 0.8rem;
-    animation: fadeUp 0.5s ease 0.2s both;
-  }
-  .section-divider-line { flex: 1; height: 1px; background: rgba(200,146,42,0.25); }
-  .section-divider-label { font-family: 'Bebas Neue', sans-serif; font-size: 0.6rem; letter-spacing: 0.4rem; color: var(--gold-bright); white-space: nowrap; }
-
-  .nlwest-panel {
-    width: 100%; background: var(--brown-mid);
-    border: 2px solid var(--gold); border-radius: 6px;
-    position: relative; z-index: 1; overflow: hidden;
-    animation: fadeUp 0.5s ease 0.25s both; margin-bottom: 1.6rem;
-    flex: 1;
-  }
-  .panel-corner { position: absolute; width: 0.53rem; height: 0.53rem; border-color: var(--gold-bright); border-style: solid; }
-  .panel-corner.tl { top:.31rem; left:.31rem;   border-width:1.5px 0 0 1.5px; }
-  .panel-corner.tr { top:.31rem; right:.31rem;  border-width:1.5px 1.5px 0 0; }
-  .panel-corner.bl { bottom:.31rem; left:.31rem;  border-width:0 0 1.5px 1.5px; }
-  .panel-corner.br { bottom:.31rem; right:.31rem; border-width:0 1.5px 1.5px 0; }
-
-  .standings-table { width: 100%; border-collapse: collapse; }
-  .standings-table thead tr { border-bottom: 1px solid rgba(200,146,42,0.3); }
-  .standings-table th { font-size: 0.5rem; letter-spacing: 0.15rem; color: var(--cream-muted); text-transform: uppercase; padding: 0.35rem 0.8rem; text-align: left; font-weight: 400; border-right: 1px solid rgba(200,146,42,0.25); }
-  .standings-table th:last-child { border-right: none; }
-  .standings-table th.num { text-align: center; }
-  .standings-table tbody tr { border-bottom: 1px solid rgba(200,146,42,0.1); transition: background 0.15s; }
-  .standings-table tbody tr:last-child { border-bottom: none; }
-  .standings-table tbody tr:hover { background: rgba(200,146,42,0.05); }
-  .standings-table tbody tr.padres-row { background: rgba(200,146,42,0.07); }
-  .standings-table td { padding: 0.3rem 0.8rem; vertical-align: middle; border-right: 1px solid rgba(200,146,42,0.15); }
-  .standings-table td:last-child { border-right: none; }
-  .standings-table td.num { text-align: center; }
-
-  .rank-num { font-family:'Bebas Neue',sans-serif; font-size:0.6rem; color:var(--cream-muted); width:1.2rem; text-align:center; }
-  .team-name-cell { display:flex; align-items:center; gap:0.5rem; }
-  .team-abbr { font-family:'Bebas Neue',sans-serif; font-size:0.9rem; letter-spacing:0.05rem; color:var(--cream); min-width:2.2rem; }
-  .team-abbr.padres { color: var(--gold-bright); }
-  .team-full { font-size:0.62rem; color:var(--cream); letter-spacing:0.03rem; white-space:nowrap; }
-  .record { font-size:0.65rem; color:var(--cream); }
-  .gb  { font-size:0.65rem; color:var(--cream); }
-  .pct { font-size:0.65rem; color:var(--cream); }
-
-  .next-game-cell { text-align:right; width:28%; padding:0.3rem 1.4rem 0.3rem 0; }
-  .game-live { display:inline-flex; align-items:center; gap:0.3rem; }
-  .live-dot { display:inline-block; width:0.31rem; height:0.31rem; background:var(--live); border-radius:50%; animation:pulse 1.2s ease-in-out infinite; flex-shrink:0; }
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.65)} }
-
-  /* Score line: ABB R – R ABB */
-  .game-scoreline { font-family:'Bebas Neue',sans-serif; font-size:0.72rem; color:var(--gold-bright); letter-spacing:0.06rem; }
-  .game-scoreline.final-w { color: var(--yes); }
-  .game-scoreline.final-l { color: var(--no); }
-
-  .game-sub { font-size:0.5rem; color:rgba(245,237,216,0.75); letter-spacing:0.04rem; margin-top:0.1rem; }
-  .game-time { font-size:0.56rem; color:var(--cream); letter-spacing:0.04rem; }
-  .no-game   { font-size:0.38rem; color:rgba(245,237,216,0.25); letter-spacing:0.04rem; }
-
-  /* Promo cards */
-  .card { background:var(--brown-mid); border:2px solid var(--gold); border-radius:6px; padding:0.82rem 1.07rem 0.72rem; display:flex; flex-direction:column; align-items:center; text-align:center; position:relative; gap:0.35rem; }
-  .card-corner { position:absolute; width:0.53rem; height:0.53rem; border-color:var(--gold-bright); border-style:solid; }
-  .card-corner.tl{top:.31rem;left:.31rem;border-width:1.5px 0 0 1.5px}
-  .card-corner.tr{top:.31rem;right:.31rem;border-width:1.5px 1.5px 0 0}
-  .card-corner.bl{bottom:.31rem;left:.31rem;border-width:0 0 1.5px 1.5px}
-  .card-corner.br{bottom:.31rem;right:.31rem;border-width:0 1.5px 1.5px 0}
-  .card-brand-block{display:flex;flex-direction:column;align-items:center;gap:0.12rem}
-  .card-icon{font-size:1.3rem;line-height:1}
-  .card-brand{font-family:'Bebas Neue',sans-serif;font-size:0.7rem;letter-spacing:0.18rem;color:var(--gold-bright)}
-  .card-trigger-label{font-size:0.4rem;letter-spacing:0.2rem;color:var(--cream-muted);text-transform:uppercase}
-  .card-trigger{font-family:'Bebas Neue',sans-serif;font-size:0.89rem;letter-spacing:0.09rem;color:var(--cream);line-height:1.2}
-  .card-divider{width:100%;height:1px;background:rgba(200,146,42,0.2)}
-  .result-area{width:100%;padding:0.53rem 0.62rem;border-radius:4px;display:flex;flex-direction:column;align-items:center;gap:0.15rem}
-  .result-area.yes    {background:rgba(126,182,72,0.12);border:1px solid var(--yes)}
-  .result-area.no     {background:rgba(192,57,43,0.12);border:1px solid var(--no)}
-  .result-area.live   {background:rgba(232,184,75,0.08);border:1px solid var(--live)}
-  .result-area.nogame {background:rgba(200,146,42,0.08);border:1px solid var(--gold)}
-  .result-area.loading{background:transparent;border:1px solid rgba(200,146,42,0.2)}
-  .result-stat      {font-family:'Bebas Neue',sans-serif;font-size:1.65rem;line-height:1;color:var(--gold-bright)}
-  .result-stat-label{font-size:0.4rem;letter-spacing:0.2rem;color:var(--cream-muted);text-transform:uppercase}
-  .result-game-label{font-family:'Bebas Neue',sans-serif;font-size:1.65rem;line-height:1;color:var(--gold-bright);word-break:break-word}
-  .result-verdict{font-family:'Bebas Neue',sans-serif;font-size:0.88rem;letter-spacing:0.09rem;line-height:1}
-  .result-verdict.yes   {color:var(--yes)}
-  .result-verdict.no    {color:var(--no)}
-  .result-verdict.live  {color:var(--live);font-size:0.65rem}
-  .result-verdict.nogame{color:var(--gold-pale);font-size:0.53rem}
-  .result-sub{font-size:0.44rem;letter-spacing:0.07rem;color:var(--cream-muted)}
-  .result-sub span{color:var(--cream);font-weight:700}
-  .card-reward{font-size:0.44rem;letter-spacing:0.04rem;color:var(--cream-muted);line-height:1.3}
-  .card-reward a{color:var(--gold-bright);text-decoration:none}
-  .card-reward a:hover{text-decoration:underline}
-  .loading-blink{font-size:0.53rem;letter-spacing:0.2rem;color:var(--gold-bright);animation:blink 0.9s step-end infinite;padding:0.35rem 0}
-  @keyframes blink{50%{opacity:0}}
-</style>
-</head>
-<body>
-
-<style>
+  /* ── Top bar ────────────────────────────────────────────────── */
   .top-bar {
     width: 100%;
     max-width: 73.33rem;
@@ -212,16 +128,408 @@
     border-radius: 3px;
     text-decoration: none;
     text-transform: uppercase;
-    transition: all 0.2s;
+    transition: background-color 0.2s, border-color 0.2s;
   }
   .home-btn:hover {
     background: rgba(200,146,42,0.1);
     border-color: var(--gold-bright);
   }
 
-  /* ── Mobile standings ── */
-  @media (max-width: 600px) {
+  /* ── Bottom row (game panel + standings) ───────────────────── */
+  .bottom-row {
+    display: flex;
+    align-items: stretch;
+    gap: 1rem;
+    width: 100%;
+    max-width: 73.33rem;
+    position: relative;
+    z-index: 1;
+    animation: fadeUp 0.5s ease 0.2s both;
+    justify-content: center;
+  }
+  .bottom-left, .bottom-right {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+  .bottom-left { flex-shrink: 0; }
+  .bottom-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 0.6rem;
+    letter-spacing: 0.4rem;
+    color: var(--gold-bright);
+    white-space: nowrap;
+    margin-bottom: 0.6rem;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  /* ── Promo grid ────────────────────────────────────────────── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.71rem;
+    width: 100%;
+    max-width: 73.33rem;
+    position: relative;
+    z-index: 1;
+    animation: fadeUp 0.5s ease 0.1s both;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(1.07rem); } to { opacity: 1; transform: translateY(0); } }
+
+  .matchup-line {
+    font-size: 0.44rem;
+    letter-spacing: 0.09rem;
+    color: var(--cream-muted);
+    margin-top: 0.4rem;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .promo-heading {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.25rem;
+    color: var(--gold-bright);
+    text-align: center;
+    width: 100%;
+    max-width: 73.33rem;
+    position: relative;
+    z-index: 1;
+    margin: 1.4rem 0 0.8rem;
+    animation: fadeUp 0.5s ease 0.15s both;
+  }
+
+  /* ── NL West panel + standings ─────────────────────────────── */
+  .nlwest-panel {
+    width: 100%;
+    background: var(--brown-mid);
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease 0.25s both;
+    margin-bottom: 1.6rem;
+    flex: 1;
+  }
+
+  .standings-table { width: 100%; border-collapse: collapse; }
+  .standings-table thead tr { border-bottom: 1px solid var(--gold-line-strong); }
+  .standings-table th {
+    font-size: 0.5rem;
+    letter-spacing: 0.15rem;
+    color: var(--cream-muted);
+    text-transform: uppercase;
+    padding: 0.35rem 0.8rem;
+    text-align: left;
+    font-weight: 400;
+    border-right: 1px solid var(--gold-line-mid);
+  }
+  .standings-table th:last-child { border-right: none; }
+  .standings-table th.num { text-align: center; }
+  .standings-table tbody tr {
+    border-bottom: 1px solid var(--gold-line-ghost);
+    transition: background-color 0.15s;
+  }
+  .standings-table tbody tr:last-child { border-bottom: none; }
+  .standings-table tbody tr:hover { background: rgba(200,146,42,0.05); }
+  .standings-table tbody tr.padres-row { background: rgba(200,146,42,0.07); }
+  .standings-table td {
+    padding: 0.3rem 0.8rem;
+    vertical-align: middle;
+    border-right: 1px solid var(--gold-line-faint);
+  }
+  .standings-table td:last-child { border-right: none; }
+  .standings-table td.num { text-align: center; }
+
+  .rank-num       { font-family: 'Bebas Neue', sans-serif; font-size: 0.6rem; color: var(--cream-muted); width: 1.2rem; text-align: center; }
+  .team-name-cell { display: flex; align-items: center; gap: 0.5rem; }
+  .team-abbr      { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 0.05rem; color: var(--cream); min-width: 2.2rem; }
+  .team-abbr.padres { color: var(--gold-bright); }
+  .team-full { font-size: 0.62rem; color: var(--cream); letter-spacing: 0.03rem; white-space: nowrap; }
+  .record, .gb, .pct { font-size: 0.65rem; color: var(--cream); }
+
+  .next-game-cell { text-align: right; width: 28%; padding: 0.3rem 1.4rem 0.3rem 0; }
+  .next-game-th   { font-size: 0.5rem; letter-spacing: 0.2rem; color: var(--cream-muted); font-weight: 400; text-transform: uppercase; }
+  .game-live { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .live-dot {
+    display: inline-block;
+    width: 0.31rem;
+    height: 0.31rem;
+    background: var(--live);
+    border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1;   transform: scale(1); }
+    50%      { opacity: .35; transform: scale(.65); }
+  }
+
+  /* Score line: ABB R – R ABB */
+  .game-scoreline { font-family: 'Bebas Neue', sans-serif; font-size: 0.72rem; color: var(--gold-bright); letter-spacing: 0.06rem; }
+  .game-scoreline.final-w { color: var(--yes); }
+  .game-scoreline.final-l { color: var(--no); }
+  /* Replaces inline style="color:..." per cell */
+  .score-team-won  { color: var(--cream); }
+  .score-team-lost { color: var(--no); }
+  .score-dash      { color: var(--cream-muted); }
+
+  .game-sub  { font-size: 0.5rem;  color: rgba(245,237,216,0.75); letter-spacing: 0.04rem; margin-top: 0.1rem; }
+  .game-time { font-size: 0.56rem; color: var(--cream); letter-spacing: 0.04rem; }
+  .no-game   { font-size: 0.38rem; color: rgba(245,237,216,0.25); letter-spacing: 0.04rem; }
+
+  /* ── Promo cards ───────────────────────────────────────────── */
+  .card {
+    background: var(--brown-mid);
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    padding: 0.82rem 1.07rem 0.72rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    gap: 0.35rem;
+  }
+  .card-brand-block   { display: flex; flex-direction: column; align-items: center; gap: 0.12rem; }
+  .card-icon          { font-size: 1.3rem; line-height: 1; }
+  .card-brand         { font-family: 'Bebas Neue', sans-serif; font-size: 0.7rem; letter-spacing: 0.18rem; color: var(--gold-bright); }
+  .card-trigger-label { font-size: 0.4rem; letter-spacing: 0.2rem; color: var(--cream-muted); text-transform: uppercase; }
+  .card-trigger       { font-family: 'Bebas Neue', sans-serif; font-size: 0.89rem; letter-spacing: 0.09rem; color: var(--cream); line-height: 1.2; }
+  .card-divider       { width: 100%; height: 1px; background: var(--gold-line-soft); }
+
+  .result-area {
+    width: 100%;
+    padding: 0.53rem 0.62rem;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+  }
+  .result-area.yes     { background: rgba(126,182,72,0.12); border: 1px solid var(--yes); }
+  .result-area.no      { background: rgba(192,57,43,0.12);  border: 1px solid var(--no); }
+  .result-area.live    { background: rgba(232,184,75,0.08); border: 1px solid var(--live); }
+  .result-area.nogame  { background: rgba(200,146,42,0.08); border: 1px solid var(--gold); }
+  .result-area.loading { background: transparent;            border: 1px solid var(--gold-line-soft); }
+
+  .result-stat        { font-family: 'Bebas Neue', sans-serif; font-size: 1.65rem; line-height: 1; color: var(--gold-bright); }
+  .result-stat-label  { font-size: 0.4rem; letter-spacing: 0.2rem; color: var(--cream-muted); text-transform: uppercase; }
+  .result-game-label  { font-family: 'Bebas Neue', sans-serif; font-size: 1.65rem; line-height: 1; color: var(--gold-bright); word-break: break-word; }
+  .result-verdict     { font-family: 'Bebas Neue', sans-serif; font-size: 0.88rem; letter-spacing: 0.09rem; line-height: 1; }
+  .result-verdict.yes    { color: var(--yes); }
+  .result-verdict.no     { color: var(--no); }
+  .result-verdict.live   { color: var(--live); font-size: 0.65rem; }
+  .result-verdict.nogame { color: var(--gold-pale); font-size: 0.53rem; }
+  .result-verdict .live-dot {
+    margin-right: .22rem;
+    vertical-align: middle;
+    position: relative;
+    top: -.04rem;
+  }
+
+  .result-sub      { font-size: 0.44rem; letter-spacing: 0.07rem; color: var(--cream-muted); }
+  .result-sub span { color: var(--cream); font-weight: 700; }
+  .card-reward     { font-size: 0.44rem; letter-spacing: 0.04rem; color: var(--cream-muted); line-height: 1.3; }
+  .card-reward a   { color: var(--gold-bright); text-decoration: none; }
+  .card-reward a:hover { text-decoration: underline; }
+
+  .loading-blink {
+    font-size: 0.53rem;
+    letter-spacing: 0.2rem;
+    color: var(--gold-bright);
+    animation: blink 0.9s step-end infinite;
+    padding: 0.35rem 0;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── Game Panel ────────────────────────────────────────────── */
+  .game-panel {
+    background: var(--brown-mid);
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    padding: 0.5rem 1rem 0.9rem;
+    position: relative;
+    width: 100%;
+    flex: 1;
+    margin-bottom: 1.6rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gp-body { display: flex; gap: 0; align-items: stretch; flex: 1; }
+
+  .gp-left, .gp-mid, .gp-right { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .gp-left  { border-right: 1px solid var(--gold-line-soft); padding-right: 0.7rem; }
+  .gp-mid   { align-items: center; padding: 0 0.6rem; }
+  .gp-right { border-left:  1px solid var(--gold-line-soft); padding-left:  0.7rem; text-align: right; }
+
+  .gp-team-header { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.08rem; line-height: 1; margin-bottom: 0.35rem; }
+  .gp-team-header.padres { color: var(--gold-bright); }
+  .gp-team-header.opp    { color: var(--cream); }
+  .gp-team-score   { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; line-height: 1; color: var(--cream); }
+  .gp-team-topline { display: flex; align-items: baseline; gap: 0.45rem; margin-bottom: 0.35rem; }
+  .gp-right .gp-team-topline { justify-content: flex-end; }
+
+  .gp-lineup { list-style: none; flex: 0; }
+  .gp-lineup li {
+    font-size: 0.6rem;
+    line-height: 1.7;
+    color: var(--cream);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gp-lineup li.current-batter { color: var(--gold-bright); font-weight: 700; }
+  .gp-lineup li .order-num { color: rgba(200,146,42,0.5); font-size: 0.45rem; margin-right: 0.2rem; }
+  .gp-right .gp-lineup li .order-num { margin-right: 0; margin-left: 0.2rem; }
+  .gp-lineup li .pos-tag { font-size: 0.4rem; color: rgba(200,146,42,0.55); margin-left: 0.2rem; }
+  .gp-lineup li .sub-mark { font-size: 0.38rem; color: var(--yes); margin-left: 0.15rem; vertical-align: super; }
+  .pos-tag { font-family: 'IBM Plex Mono', monospace; font-size: 0.4rem; color: rgba(200,146,42,0.55); }
+
+  .gp-inning-block { text-align: center; margin-bottom: 0.3rem; }
+  .gp-half-arrow   { font-size: 0.55rem; color: var(--gold-bright); line-height: 1; }
+  .gp-inning-num   { font-family: 'Bebas Neue', sans-serif; font-size: 1.0rem; color: var(--cream); line-height: 1; letter-spacing: 0.05rem; }
+  .gp-inning-word  { font-size: 0.33rem; letter-spacing: 0.18rem; color: var(--cream-muted); text-transform: uppercase; }
+
+  .gp-live-badge,
+  .gp-warmup-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.38rem;
+    letter-spacing: 0.12rem;
+    margin-bottom: 0.1rem;
+    justify-content: center;
+  }
+  .gp-live-badge   { color: var(--gold-bright); }
+  .gp-warmup-badge { color: var(--cream-muted); }
+
+  .gp-divider { height: 1px; background: var(--gold-line-soft); margin: 0.2rem 0; width: 100%; }
+
+  .gp-diamond { flex-shrink: 0; margin: 0; }
+  .gp-diamond svg { display: block; }
+
+  .gp-outs-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    margin-top: -0.9rem;
+    margin-bottom: 0.35rem;
+  }
+  .gp-outs-label { font-size: 0.33rem; letter-spacing: 0.18rem; color: var(--cream-muted); text-transform: uppercase; padding-left: 0.3rem; }
+  .outs-pips { display: flex; gap: 0.25rem; }
+  .out-pip {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    border: 1.5px solid rgba(200,146,42,0.75);
+    background: transparent;
+    transition: background-color 0.2s;
+  }
+  .out-pip.on { background: var(--no); border-color: var(--no); box-shadow: 0 0 0 1.5px #000; }
+
+  .gp-center-score {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.15rem;
+  }
+  .gp-center-team {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.05rem;
+    line-height: 1;
+  }
+  .gp-center-team.padres { color: var(--gold-bright); }
+  .gp-center-team.opp    { color: var(--cream); }
+  .gp-center-runs {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    color: var(--cream);
+    line-height: 1;
+  }
+  .gp-center-dash { color: var(--cream-muted); font-size: 1rem; position: relative; top: -0.25rem; }
+
+  .gp-lineup-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.12rem;
+    margin-bottom: 0.05rem;
+  }
+  .gp-lineup-name.padres { color: var(--gold-bright); }
+  .gp-lineup-name.opp    { color: var(--cream); }
+  .gp-right .gp-lineup-name { text-align: right; }
+
+  .gp-inning-block-mid { display: flex; flex-direction: column; align-items: center; margin-top: 0.1rem; }
+  .gp-half-arrow-sm    { font-size: 0.55rem; color: var(--gold-bright); line-height: 1; }
+  .gp-inning-big       { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--cream); line-height: 1; letter-spacing: 0.05rem; }
+  .gp-count-big        { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; color: var(--gold-bright); line-height: 1.2; letter-spacing: 0.05rem; }
+
+  .gp-pitcher-footer { padding-top: 0; border-top: 1px solid var(--gold-line-soft); }
+  .gp-pitcher-name {
+    font-size: 0.6rem;
+    color: var(--cream);
+    line-height: 1.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gp-pitcher-name .pos-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.4rem;
+    color: rgba(200,146,42,0.55);
+    margin-left: 0.2rem;
+  }
+  .gp-right .gp-pitcher-name .pos-tag { margin-left: 0; margin-right: 0.2rem; }
+  .gp-pitcher-stat { font-size: 0.45rem; color: var(--cream-muted); }
+  .gp-right .gp-pitcher-footer { text-align: right; }
+
+  .gp-next { text-align: center; padding: 0.8rem 0; width: 100%; }
+  .gp-next-label { font-size: 0.4rem; letter-spacing: 0.2rem; color: var(--cream-muted); text-transform: uppercase; margin-bottom: 0.5rem; }
+  .gp-next-teams { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.1rem; color: var(--cream); margin-bottom: 0.25rem; }
+  .gp-next-time  { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; color: var(--gold-bright); letter-spacing: 0.08rem; }
+  .gp-next-date  { font-size: 0.42rem; color: var(--cream-muted); letter-spacing: 0.1rem; margin-top: 0.2rem; }
+  .gp-loading {
+    font-size: 0.44rem;
+    letter-spacing: 0.2rem;
+    color: var(--gold-bright);
+    animation: blink 0.9s step-end infinite;
+    text-align: center;
+    padding: 0.8rem 0;
+  }
+
+  /* Inline cell error styling (replaces inline style attributes) */
+  .cell-error    { text-align: center; padding: 1rem; color: var(--no); font-size: 0.44rem; }
+  .cell-loading  { text-align: center; padding: 1rem; color: var(--cream-muted); font-size: 0.44rem; }
+  .panel-error   { text-align: center; padding: 0.8rem; color: var(--no); font-size: 0.4rem; }
+
+  /* Phone/narrow layout */
+  @media (max-width: 700px), (pointer: coarse) and (max-width: 1024px) {
+    .bottom-row { flex-direction: column; }
+    .bottom-left, .bottom-right { width: 100%; }
     .gp-body { justify-content: center; }
+    .gp-left, .gp-right { display: none !important; }
+    .gp-mid { flex: 1 !important; padding: 0.6rem !important; }
+  }
+  body.is-phone .bottom-row { flex-direction: column; }
+  body.is-phone .bottom-left,
+  body.is-phone .bottom-right { width: 100%; }
+  body.is-phone .gp-left,
+  body.is-phone .gp-right { display: none !important; }
+  body.is-phone .gp-mid { flex: 1 !important; padding: 0.6rem !important; }
+
+  @media (max-width: 600px) {
     .team-full { display: none; }
     .standings-table th.hide-mobile,
     .standings-table td.hide-mobile { display: none; }
@@ -240,9 +548,13 @@
     .next-game-cell { min-width: unset; padding-right: 0.5rem; }
   }
 </style>
+</head>
+<body>
+
 <div class="top-bar">
   <a class="home-btn" href="https://ideo.zip">← Home</a>
 </div>
+
 <div class="header">
   <div class="header-eyebrow">San Diego Padres</div>
   <div class="header-title">Dashboard</div>
@@ -254,8 +566,8 @@
   <div class="bottom-left">
     <div class="bottom-label">Padres Game</div>
     <div class="game-panel" id="gamePanel">
-      <div class="gpc tl"></div><div class="gpc tr"></div>
-      <div class="gpc bl"></div><div class="gpc br"></div>
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
       <div class="gp-loading">Loading ▋</div>
     </div>
   </div>
@@ -263,194 +575,45 @@
   <div class="bottom-right">
     <div class="bottom-label">NL West Standings</div>
     <div class="nlwest-panel">
-  <div class="panel-corner tl"></div><div class="panel-corner tr"></div>
-  <div class="panel-corner bl"></div><div class="panel-corner br"></div>
-  <table class="standings-table">
-    <thead>
-      <tr>
-        <th class="team-th" style="width:35%">Team</th>
-        <th class="num">W</th>
-        <th class="num">L</th>
-        <th class="num">PCT</th>
-        <th class="num hide-mobile">GB</th>
-        <th class="num">L10</th>
-        <th class="next-game-cell" style="font-size:0.5rem;letter-spacing:0.2rem;color:var(--cream-muted);font-weight:400;text-transform:uppercase;">Today's Game</th>
-      </tr>
-    </thead>
-    <tbody id="standingsBody">
-      <tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--cream-muted);font-size:0.44rem">Loading standings...</td></tr>
-    </tbody>
-  </table>
-</div><!-- end nlwest-panel -->
-  </div><!-- end bottom-right -->
-</div><!-- end bottom-row -->
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <table class="standings-table">
+        <thead>
+          <tr>
+            <th class="team-th" style="width:35%">Team</th>
+            <th class="num">W</th>
+            <th class="num">L</th>
+            <th class="num">PCT</th>
+            <th class="num hide-mobile">GB</th>
+            <th class="num">L10</th>
+            <th class="next-game-cell next-game-th">Today's Game</th>
+          </tr>
+        </thead>
+        <tbody id="standingsBody">
+          <tr><td colspan="7" class="cell-loading">Loading standings...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <div class="promo-heading">Yesterday's Promo Results</div>
 
 <div class="grid" id="grid"></div>
 <div class="matchup-line" id="matchupLine"></div>
 
-<style>
-  .bottom-row {
-    display: flex;
-    align-items: stretch;
-    gap: 1rem;
-    width: 100%;
-    max-width: 73.33rem;
-    position: relative;
-    z-index: 1;
-    animation: fadeUp 0.5s ease 0.2s both;
-    margin-bottom: 0;
-    justify-content: center;
-  }
-  .bottom-left  { display: flex; flex-direction: column; flex-shrink: 0; flex: 1; min-width: 0; }
-  .bottom-right { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-  .bottom-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 800;
-    font-size: 0.6rem; letter-spacing: 0.4rem;
-    color: var(--gold-bright); white-space: nowrap;
-    margin-bottom: 0.6rem; text-align: center;
-    text-transform: uppercase;
-  }
-  /* CSS: narrow screens OR touch/pointer devices (phones/tablets) */
-  @media (max-width: 700px), (pointer: coarse) and (max-width: 1024px) {
-    .bottom-row { flex-direction: column; }
-    .bottom-left, .bottom-right { width: 100%; }
-    .gp-left, .gp-right { display: none !important; }
-    .gp-mid { flex: 1 !important; padding: 0.6rem !important; }
-  }
-  /* JS-applied class for phones detected via userAgent */
-  body.is-phone .gp-left,
-  body.is-phone .gp-right { display: none !important; }
-  body.is-phone .gp-mid { flex: 1 !important; padding: 0.6rem !important; }
-  body.is-phone .bottom-row { flex-direction: column; }
-  body.is-phone .bottom-left,
-  body.is-phone .bottom-right { width: 100%; }
-
-  /* ── Game Panel ── */
-  .game-panel {
-    background: var(--brown-mid);
-    border: 2px solid var(--gold); border-radius: 6px;
-    padding: 0.5rem 1rem 0.9rem;
-    position: relative;
-    width: 100%;
-    flex: 1;
-    margin-bottom: 1.6rem;
-    display: flex;
-    flex-direction: column;
-  }
-  @media (max-width: 700px) { .game-panel { width: 100%; } }
-
-  .gpc { position: absolute; width: 0.53rem; height: 0.53rem; border-color: var(--gold-bright); border-style: solid; }
-  .gpc.tl{top:.31rem;left:.31rem;border-width:1.5px 0 0 1.5px}
-  .gpc.tr{top:.31rem;right:.31rem;border-width:1.5px 1.5px 0 0}
-  .gpc.bl{bottom:.31rem;left:.31rem;border-width:0 0 1.5px 1.5px}
-  .gpc.br{bottom:.31rem;right:.31rem;border-width:0 1.5px 1.5px 0}
-
-  /* ── Game panel inner layout ── */
-  .gp-body { display:flex; gap:0; align-items:stretch; flex:1; }
-
-  /* Three equal columns */
-  .gp-left, .gp-mid, .gp-right { flex:1; min-width:0; display:flex; flex-direction:column; }
-  .gp-left  { border-right:1px solid rgba(200,146,42,0.2); padding-right:0.7rem; }
-  .gp-mid   { align-items:center; padding:0 0.6rem; }
-  .gp-right { border-left:1px solid rgba(200,146,42,0.2); padding-left:0.7rem; text-align:right; }
-
-  .gp-team-header { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; letter-spacing:0.08rem; line-height:1; margin-bottom:0.35rem; }
-  .gp-team-header.padres { color:var(--gold-bright); }
-  .gp-team-header.opp    { color:var(--cream); }
-  .gp-team-score { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; line-height:1; color:var(--cream); }
-  .gp-team-topline { display:flex; align-items:baseline; gap:0.45rem; margin-bottom:0.35rem; }
-  .gp-right .gp-team-topline { justify-content:flex-end; }
-
-  /* Lineup — bigger and full cream */
-  .gp-lineup { list-style:none; flex:0; }
-  .gp-lineup li { font-size:0.6rem; line-height:1.7; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .gp-lineup li.current-batter { color:var(--gold-bright); font-weight:700; }
-  .gp-lineup li .order-num { color:rgba(200,146,42,0.5); font-size:0.45rem; margin-right:0.2rem; }
-  .gp-right .gp-lineup li .order-num { margin-right:0; margin-left:0.2rem; }
-  .gp-lineup li .pos-tag { font-size:0.4rem; color:rgba(200,146,42,0.55); margin-left:0.2rem; }
-  .gp-lineup li .sub-mark { font-size:0.38rem; color:var(--yes); margin-left:0.15rem; vertical-align:super; }
-  /* Shared pos-tag style for use outside lineup (e.g. pitcher footer) */
-  .pos-tag { font-family:'IBM Plex Mono',monospace; font-size:0.4rem; color:rgba(200,146,42,0.55); }
-
-  /* Middle status */
-  .gp-inning-block { text-align:center; margin-bottom:0.3rem; }
-  .gp-half-arrow  { font-size:0.55rem; color:var(--gold-bright); line-height:1; }
-  .gp-inning-num  { font-family:'Bebas Neue',sans-serif; font-size:1.0rem; color:var(--cream); line-height:1; letter-spacing:0.05rem; }
-  .gp-inning-word { font-size:0.33rem; letter-spacing:0.18rem; color:var(--cream-muted); text-transform:uppercase; }
-
-  .gp-live-badge { display:flex; align-items:center; gap:0.2rem; font-size:0.38rem; letter-spacing:0.12rem; color:var(--gold-bright); margin-bottom:0.1rem; justify-content:center; }
-  .gp-warmup-badge { display:flex; align-items:center; gap:0.2rem; font-size:0.38rem; letter-spacing:0.12rem; color:var(--cream-muted); margin-bottom:0.1rem; justify-content:center; }
-
-  .gp-divider { height:1px; background:rgba(200,146,42,0.2); margin:0.2rem 0; width:100%; }
-
-  /* Diamond SVG */
-  .gp-diamond { flex-shrink:0; margin:0; }
-  .gp-diamond svg { display:block; }
-  .base { display:none; } /* bases handled by SVG now */
-  .base-line { display:none; }
-
-  /* Outs */
-  .gp-outs-col { display:flex; flex-direction:column; align-items:center; gap:0.2rem; margin-top:-0.9rem; margin-bottom:0.35rem; }
-  .gp-outs-label { font-size:0.33rem; letter-spacing:0.18rem; color:var(--cream-muted); text-transform:uppercase; padding-left:0.3rem; }
-  .outs-pips { display:flex; gap:0.25rem; }
-  .out-pip { width:0.55rem; height:0.55rem; border-radius:50%; border:1.5px solid rgba(200,146,42,0.75); background:transparent; transition:background 0.2s; }
-  .out-pip.on { background:var(--no); border-color:var(--no); box-shadow:0 0 0 1.5px #000; }
-
-  /* Score display in center column */
-  .gp-center-score {
-    display:flex; align-items:baseline; justify-content:center;
-    gap:0.5rem; margin-top:0.15rem;
-  }
-  .gp-center-team {
-    font-family:'Bebas Neue',sans-serif; font-size:1.6rem;
-    letter-spacing:0.05rem; line-height:1;
-  }
-  .gp-center-team.padres { color:var(--gold-bright); }
-  .gp-center-team.opp    { color:var(--cream); }
-  .gp-center-runs {
-    font-family:'Bebas Neue',sans-serif; font-size:1.6rem;
-    color:var(--cream); line-height:1;
-  }
-  .gp-center-dash { color:var(--cream-muted); font-size:1rem; position:relative; top:-0.25rem; }
-
-  /* Team name above lineup */
-  .gp-lineup-name {
-    font-family:'Bebas Neue',sans-serif; font-size:0.65rem;
-    letter-spacing:0.12rem; margin-bottom:0.05rem;
-  }
-  .gp-lineup-name.padres { color:var(--gold-bright); }
-  .gp-lineup-name.opp    { color:var(--cream); }
-  .gp-right .gp-lineup-name { text-align:right; }
-
-  /* Inning + count block in center column — sits right under score */
-  .gp-inning-block-mid { display:flex; flex-direction:column; align-items:center; margin-top:0.1rem; }
-  .gp-half-arrow-sm { font-size:0.55rem; color:var(--gold-bright); line-height:1; }
-  .gp-inning-big { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; color:var(--cream); line-height:1; letter-spacing:0.05rem; }
-  .gp-count-big  { font-family:'Bebas Neue',sans-serif; font-size:0.9rem; color:var(--gold-bright); line-height:1.2; letter-spacing:0.05rem; }
-
-  /* Pitcher footer at bottom of lineup columns */
-  .gp-pitcher-footer { padding-top:0; border-top:1px solid rgba(200,146,42,0.2); }
-  .gp-pitcher-name  { font-size:0.6rem; color:var(--cream); line-height:1.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .gp-pitcher-name .pos-tag { font-family:'IBM Plex Mono',monospace; font-size:0.4rem; color:rgba(200,146,42,0.55); margin-left:0.2rem; }
-  .gp-right .gp-pitcher-name .pos-tag { margin-left:0; margin-right:0.2rem; }
-  .gp-pitcher-stat  { font-size:0.45rem; color:var(--cream-muted); }
-  .gp-right .gp-pitcher-footer { text-align:right; }
-
-  /* next game */
-  .gp-next { text-align:center; padding:0.8rem 0; width:100%; }
-  .gp-next-label { font-size:0.4rem; letter-spacing:0.2rem; color:var(--cream-muted); text-transform:uppercase; margin-bottom:0.5rem; }
-  .gp-next-teams { font-family:'Bebas Neue',sans-serif; font-size:1.4rem; letter-spacing:0.1rem; color:var(--cream); margin-bottom:0.25rem; }
-  .gp-next-time  { font-family:'Bebas Neue',sans-serif; font-size:0.85rem; color:var(--gold-bright); letter-spacing:0.08rem; }
-  .gp-next-date  { font-size:0.42rem; color:var(--cream-muted); letter-spacing:0.1rem; margin-top:0.2rem; }
-  .gp-loading    { font-size:0.44rem; letter-spacing:0.2rem; color:var(--gold-bright); animation:blink 0.9s step-end infinite; text-align:center; padding:0.8rem 0; }
-</style>
 <script>
-const PADRES_ID = 135;
+'use strict';
 
-/* NL West — stable MLB team IDs + abbreviations (no API needed) */
+/* ── Constants ────────────────────────────────────────────────── */
+const PADRES_ID = 135;
+const STATS_API = 'https://statsapi.mlb.com/api/v1';
+const STATS_API_V11 = 'https://statsapi.mlb.com/api/v1.1';
+const GAME_POLL_MS = 15_000;
+const STANDINGS_POLL_MS = 30_000;
+const SEASON = 2026;
+
+/* NL West — stable MLB team IDs + abbreviations */
 const NL_WEST = [
   { id: 119, abbr: 'LAD', name: 'Los Angeles Dodgers'  },
   { id: 135, abbr: 'SD',  name: 'San Diego Padres'     },
@@ -458,678 +621,718 @@ const NL_WEST = [
   { id: 137, abbr: 'SF',  name: 'San Francisco Giants' },
   { id: 115, abbr: 'COL', name: 'Colorado Rockies'     },
 ];
-
-/* Master ID → abbreviation map, seeded with all 30 teams we know */
-const ID_TO_ABBR = {
-  108:'LAA', 109:'AZ',  110:'BAL', 111:'BOS', 112:'CHC',
-  113:'CIN', 114:'CLE', 115:'COL', 116:'DET', 117:'HOU',
-  118:'KC',  119:'LAD', 120:'WSH', 121:'NYM', 133:'ATH',
-  134:'PIT', 135:'SD',  136:'SEA', 137:'SF',  138:'STL',
-  139:'TB',  140:'TEX', 141:'TOR', 142:'MIN', 143:'PHI',
-  144:'ATL', 145:'CWS', 146:'MIA', 158:'MIL', 137:'SF',
-};
-
 const NL_WEST_IDS = new Set(NL_WEST.map(t => t.id));
 
+/* Master ID → abbreviation map. Note: original had a duplicate 137 key
+   (SF appeared twice); removed. */
+const ID_TO_ABBR = {
+  108: 'LAA', 109: 'AZ',  110: 'BAL', 111: 'BOS', 112: 'CHC',
+  113: 'CIN', 114: 'CLE', 115: 'COL', 116: 'DET', 117: 'HOU',
+  118: 'KC',  119: 'LAD', 120: 'WSH', 121: 'NYM', 133: 'ATH',
+  134: 'PIT', 135: 'SD',  136: 'SEA', 137: 'SF',  138: 'STL',
+  139: 'TB',  140: 'TEX', 141: 'TOR', 142: 'MIN', 143: 'PHI',
+  144: 'ATL', 145: 'CWS', 146: 'MIA', 158: 'MIL',
+};
+
+/* Pre-built static HTML fragment used many times — stop rebuilding it */
+const CORNERS_HTML = '<div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>';
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const NAME_SUFFIXES = new Set(['jr.', 'sr.', 'ii', 'iii', 'iv', 'v']);
+
+/* ── Promo definitions ────────────────────────────────────────── */
 const PROMOS = [
   {
-    id:'strikeouts', icon:'🐾', brand:'Petco',
-    trigger:'K-9 or more strikeouts',
-    reward:'25% off your total purchase at participating Petco locations with loyalty membership. Ask for "Padres K-9 Promotion" at checkout.',
-    rewardLink:{ text:'Petco.com/PadresK9', href:'https://www.petco.com/PadresK-9' },
-    stat:(box,side)=>{
-      const ps=box.teams[side].teamStats?.pitching;
-      if(ps?.strikeOuts!==undefined) return{value:ps.strikeOuts,label:'Strikeouts'};
-      const pitchers=box.teams[side].pitchers||[],players=box.teams[side].players;
-      let k=0; for(const pid of pitchers) k+=players[`ID${pid}`]?.stats?.pitching?.strikeOuts??0;
-      return{value:k,label:'Strikeouts'};
+    id: 'strikeouts', icon: '🐾', brand: 'Petco',
+    trigger: 'K-9 or more strikeouts',
+    reward: '25% off your total purchase at participating Petco locations with loyalty membership. Ask for "Padres K-9 Promotion" at checkout.',
+    rewardLink: { text: 'Petco.com/PadresK9', href: 'https://www.petco.com/PadresK-9' },
+    stat: (box, side) => {
+      const ps = box.teams[side].teamStats?.pitching;
+      if (ps?.strikeOuts !== undefined) return { value: ps.strikeOuts, label: 'Strikeouts' };
+      const pitchers = box.teams[side].pitchers || [];
+      const players = box.teams[side].players;
+      let k = 0;
+      for (const pid of pitchers) k += players[`ID${pid}`]?.stats?.pitching?.strikeOuts ?? 0;
+      return { value: k, label: 'Strikeouts' };
     },
-    check:v=>v>=9, liveMsg:v=>v>=9?'Already achieved':`Need ${9-v} more`,
+    check: v => v >= 9,
+    liveMsg: v => v >= 9 ? 'Already achieved' : `Need ${9 - v} more`,
   },
   {
-    id:'homerun', icon:'🍔', brand:'Jack in the Box',
-    trigger:'Any Padres home run',
-    reward:'Free Jumbo Jack with large drink purchase the day after. San Diego Jack in the Box locations or Jack App with code GOPADRES26.',
-    stat:(box,side)=>{
-      const batters=box.teams[side].batters||[],players=box.teams[side].players;
-      let hrs=0; for(const pid of batters) hrs+=players[`ID${pid}`]?.stats?.batting?.homeRuns??0;
-      return{value:hrs,label:'Home Runs'};
+    id: 'homerun', icon: '🍔', brand: 'Jack in the Box',
+    trigger: 'Any Padres home run',
+    reward: 'Free Jumbo Jack with large drink purchase the day after. San Diego Jack in the Box locations or Jack App with code GOPADRES26.',
+    stat: (box, side) => {
+      const batters = box.teams[side].batters || [];
+      const players = box.teams[side].players;
+      let hrs = 0;
+      for (const pid of batters) hrs += players[`ID${pid}`]?.stats?.batting?.homeRuns ?? 0;
+      return { value: hrs, label: 'Home Runs' };
     },
-    check:v=>v>=1, liveMsg:v=>v>=1?'Already hit one!':'None yet',
+    check: v => v >= 1,
+    liveMsg: v => v >= 1 ? 'Already hit one!' : 'None yet',
   },
   {
-    id:'win', icon:'🍟', brand:"McDonald's",
-    trigger:'Padres win',
-    reward:"Free medium fries with $2 purchase the day after a Padres win. Only on the app at participating McDonald's locations.",
-    stat:(box,side,isWin)=>({value:isWin?1:0,label:isWin?'Win':'Loss'}),
-    check:v=>v===1,
-    liveMsg:(v,score)=>score.padres>score.opp?'Currently winning':score.padres<score.opp?'Currently losing':'Tied',
-    isWinCard:true,
+    id: 'win', icon: '🍟', brand: "McDonald's",
+    trigger: 'Padres win',
+    reward: "Free medium fries with $2 purchase the day after a Padres win. Only on the app at participating McDonald's locations.",
+    stat: (box, side, isWin) => ({ value: isWin ? 1 : 0, label: isWin ? 'Win' : 'Loss' }),
+    check: v => v === 1,
+    liveMsg: (v, score) => score.padres > score.opp ? 'Currently winning' : score.padres < score.opp ? 'Currently losing' : 'Tied',
+    isWinCard: true,
   },
   {
-    id:'stolenbase', icon:'🛵', brand:'Uber Eats',
-    trigger:'Any Padres stolen base',
-    reward:'Look out for a special Uber Eats code for a deal on contactless delivery for restaurant takeout, groceries and more.',
-    stat:(box,side)=>{
-      const bs=box.teams[side].teamStats?.batting;
-      if(bs?.stolenBases!==undefined) return{value:bs.stolenBases,label:'Stolen Bases'};
-      const batters=box.teams[side].batters||[],players=box.teams[side].players;
-      let sb=0; for(const pid of batters) sb+=players[`ID${pid}`]?.stats?.batting?.stolenBases??0;
-      return{value:sb,label:'Stolen Bases'};
+    id: 'stolenbase', icon: '🛵', brand: 'Uber Eats',
+    trigger: 'Any Padres stolen base',
+    reward: 'Look out for a special Uber Eats code for a deal on contactless delivery for restaurant takeout, groceries and more.',
+    stat: (box, side) => {
+      const bs = box.teams[side].teamStats?.batting;
+      if (bs?.stolenBases !== undefined) return { value: bs.stolenBases, label: 'Stolen Bases' };
+      const batters = box.teams[side].batters || [];
+      const players = box.teams[side].players;
+      let sb = 0;
+      for (const pid of batters) sb += players[`ID${pid}`]?.stats?.batting?.stolenBases ?? 0;
+      return { value: sb, label: 'Stolen Bases' };
     },
-    check:v=>v>=1, liveMsg:v=>v>=1?'Already stolen one!':'None yet',
+    check: v => v >= 1,
+    liveMsg: v => v >= 1 ? 'Already stolen one!' : 'None yet',
   },
 ];
 
-function getLocalDateStr(offset=0){
-  const d=new Date(); d.setDate(d.getDate()+offset);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+/* ── DOM cache ────────────────────────────────────────────────── */
+/* Reading the DOM once is cheap; reading it 50 times across the file
+   is just lazy. */
+const $ = {
+  headerDate:    document.getElementById('headerDate'),
+  grid:          document.getElementById('grid'),
+  matchupLine:   document.getElementById('matchupLine'),
+  standingsBody: document.getElementById('standingsBody'),
+  gamePanel:     document.getElementById('gamePanel'),
+  nlwestPanel:   document.querySelector('.nlwest-panel'),
+};
+
+/* ── Helpers ──────────────────────────────────────────────────── */
+function getLocalDateStr(offset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
-function formatDisplayDate(s){
-  const [y,m,day]=s.split('-');
-  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${parseInt(day)}, ${y}`;
+function formatDisplayDate(s) {
+  const [y, m, day] = s.split('-');
+  return `${MONTHS[parseInt(m, 10) - 1]} ${parseInt(day, 10)}, ${y}`;
 }
 
-/* Pull abbreviation from every possible location in a game object team node */
-function extractAbbr(teamNode, fallbackId) {
-  return teamNode?.team?.abbreviation
-    || teamNode?.abbreviation
-    || ID_TO_ABBR[fallbackId]
-    || '???';
-}
-
-function cardHTML(promo, state){
-  const corners=`<div class="card-corner tl"></div><div class="card-corner tr"></div><div class="card-corner bl"></div><div class="card-corner br"></div>`;
-  let resultHTML='';
-  if(state.status==='loading'){
-    resultHTML=`<div class="result-area loading"><div class="loading-blink">Loading ▋</div></div>`;
-  } else if(state.status==='nogame'){
-    resultHTML=`<div class="result-area nogame"><div class="result-verdict nogame">No game</div><div class="result-sub">Padres had the day off</div></div>`;
-  } else {
-    const achieved=promo.check(state.value,state);
-    const cls=state.status==='live'?'live':(achieved?'yes':'no');
-    let verdictText,subText,topContent;
-    if(state.status==='live'){
-      verdictText=promo.isWinCard?promo.liveMsg(state.value,state.score):(achieved?'Yes ✓':'In Progress');
-      subText=`<span>${promo.liveMsg?promo.liveMsg(state.value,state.score):''}</span>`;
-      topContent=promo.isWinCard
-        ?`<div class="result-game-label">${state.score.padres>state.score.opp?'Padres Lead!':state.score.padres<state.score.opp?'Padres Trail':'Tied Game'}</div>`
-        :`<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
-    } else {
-      verdictText=achieved?'Yes ✓':'No ✗';
-      subText=achieved?'<span>Promo active today!</span>':'<span>No promo today</span>';
-      topContent=promo.isWinCard
-        ?`<div class="result-game-label">${achieved?'Padres Won!':'Padres Lost :('}</div><div class="result-stat-label">${achieved?'Free Fries! 🍟':'No Free Fries for You'}</div>`
-        :`<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
-    }
-    const liveDot=state.status==='live'?`<span class="live-dot" style="margin-right:.22rem;vertical-align:middle;position:relative;top:-.04rem"></span>`:'';
-    resultHTML=`<div class="result-area ${cls}">${topContent}<div class="result-verdict ${cls}">${liveDot}${verdictText}</div><div class="result-sub">${subText}</div></div>`;
+/* Returns last name, respecting Jr./Sr./II/III/IV suffixes.
+   Was duplicated three times in the original. */
+function lastName(fullName) {
+  if (!fullName) return '—';
+  const parts = fullName.split(' ');
+  if (parts.length >= 3 && NAME_SUFFIXES.has(parts[parts.length - 1].toLowerCase())) {
+    return parts[parts.length - 2] + ' ' + parts[parts.length - 1];
   }
-  const rewardLink=promo.rewardLink?` <a href="${promo.rewardLink.href}" target="_blank">${promo.rewardLink.text}</a>`:'';
-  return `<div class="card">${corners}<div class="card-brand-block"><div class="card-icon">${promo.icon}</div><div class="card-brand">${promo.brand}</div></div><div class="card-trigger-label">Promo triggers on</div><div class="card-trigger">${promo.trigger}</div><div class="card-divider"></div>${resultHTML}<div class="card-reward">${promo.reward}${rewardLink}</div></div>`;
+  return parts[parts.length - 1];
 }
 
-async function fetchNLWest(){
-  const todayStr=getLocalDateStr(0);
+const ordinalSuffix = n => [, 'st', 'nd', 'rd'][n] || 'th';
 
-  const [standRes, schedRes] = await Promise.all([
-    fetch('https://statsapi.mlb.com/api/v1/standings?leagueId=104&season=2026&standingsTypes=regularSeason'),
-    fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${todayStr}&gameType=R&hydrate=linescore`)
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+/* ── Card rendering ───────────────────────────────────────────── */
+function cardHTML(promo, state) {
+  let resultHTML;
+
+  if (state.status === 'loading') {
+    resultHTML = '<div class="result-area loading"><div class="loading-blink">Loading ▋</div></div>';
+  } else if (state.status === 'nogame') {
+    resultHTML = '<div class="result-area nogame"><div class="result-verdict nogame">No game</div><div class="result-sub">Padres had the day off</div></div>';
+  } else {
+    const achieved = promo.check(state.value, state);
+    const cls = state.status === 'live' ? 'live' : (achieved ? 'yes' : 'no');
+    let verdictText, subText, topContent;
+
+    if (state.status === 'live') {
+      verdictText = promo.isWinCard
+        ? promo.liveMsg(state.value, state.score)
+        : (achieved ? 'Yes ✓' : 'In Progress');
+      subText = `<span>${promo.liveMsg ? promo.liveMsg(state.value, state.score) : ''}</span>`;
+      topContent = promo.isWinCard
+        ? `<div class="result-game-label">${state.score.padres > state.score.opp ? 'Padres Lead!' : state.score.padres < state.score.opp ? 'Padres Trail' : 'Tied Game'}</div>`
+        : `<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
+    } else {
+      verdictText = achieved ? 'Yes ✓' : 'No ✗';
+      subText = achieved ? '<span>Promo active today!</span>' : '<span>No promo today</span>';
+      topContent = promo.isWinCard
+        ? `<div class="result-game-label">${achieved ? 'Padres Won!' : 'Padres Lost :('}</div><div class="result-stat-label">${achieved ? 'Free Fries! 🍟' : 'No Free Fries for You'}</div>`
+        : `<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
+    }
+
+    const liveDot = state.status === 'live' ? '<span class="live-dot"></span>' : '';
+    resultHTML = `<div class="result-area ${cls}">${topContent}<div class="result-verdict ${cls}">${liveDot}${verdictText}</div><div class="result-sub">${subText}</div></div>`;
+  }
+
+  const rewardLink = promo.rewardLink
+    ? ` <a href="${promo.rewardLink.href}" target="_blank" rel="noopener">${promo.rewardLink.text}</a>`
+    : '';
+
+  return `<div class="card">${CORNERS_HTML}<div class="card-brand-block"><div class="card-icon">${promo.icon}</div><div class="card-brand">${promo.brand}</div></div><div class="card-trigger-label">Promo triggers on</div><div class="card-trigger">${promo.trigger}</div><div class="card-divider"></div>${resultHTML}<div class="card-reward">${promo.reward}${rewardLink}</div></div>`;
+}
+
+function renderAllCards(stateForPromo) {
+  $.grid.innerHTML = PROMOS.map(p => cardHTML(p, stateForPromo(p))).join('');
+}
+
+/* ── Standings ────────────────────────────────────────────────── */
+async function fetchNLWest() {
+  const todayStr = getLocalDateStr(0);
+
+  const [standData, schedData] = await Promise.all([
+    fetchJSON(`${STATS_API}/standings?leagueId=104&season=${SEASON}&standingsTypes=regularSeason`),
+    fetchJSON(`${STATS_API}/schedule?sportId=1&date=${todayStr}&gameType=R&hydrate=linescore`),
   ]);
-  const standData=await standRes.json();
-  const schedData=await schedRes.json();
 
   /* W/L map by team ID */
-  const wlMap={};
-  for(const record of standData.records||[]){
-    for(const tr of record.teamRecords||[]){
-      const l10 = tr.records?.splitRecords?.find(s=>s.type==='lastTen');
-      wlMap[tr.team.id]={w:tr.wins, l:tr.losses, l10w: l10?.wins??'-', l10l: l10?.losses??'-'};
+  const wlMap = {};
+  for (const record of standData.records || []) {
+    for (const tr of record.teamRecords || []) {
+      const l10 = tr.records?.splitRecords?.find(s => s.type === 'lastTen');
+      wlMap[tr.team.id] = {
+        w: tr.wins,
+        l: tr.losses,
+        l10w: l10?.wins ?? '-',
+        l10l: l10?.losses ?? '-',
+      };
     }
   }
 
-  /* Enrich ID_TO_ABBR with whatever the API returns */
-  for(const dateObj of schedData.dates||[]){
-    for(const g of dateObj.games||[]){
-      const hId=g.teams?.home?.team?.id, hAbbr=g.teams?.home?.team?.abbreviation;
-      const aId=g.teams?.away?.team?.id, aAbbr=g.teams?.away?.team?.abbreviation;
-      if(hId && hAbbr) ID_TO_ABBR[hId]=hAbbr;
-      if(aId && aAbbr) ID_TO_ABBR[aId]=aAbbr;
-    }
-  }
+  /* Enrich ID_TO_ABBR + build today-game map keyed by NL West team ID
+     in a single pass over the schedule. The original walked the schedule twice. */
+  const todayGames = {};
+  for (const dateObj of schedData.dates || []) {
+    for (const g of dateObj.games || []) {
+      const homeId = g.teams?.home?.team?.id;
+      const awayId = g.teams?.away?.team?.id;
+      const hAbbr  = g.teams?.home?.team?.abbreviation;
+      const aAbbr  = g.teams?.away?.team?.abbreviation;
+      if (homeId && hAbbr) ID_TO_ABBR[homeId] = hAbbr;
+      if (awayId && aAbbr) ID_TO_ABBR[awayId] = aAbbr;
 
-  /* Build today-game map keyed by NL West team ID */
-  const todayGames={};
-  for(const dateObj of schedData.dates||[]){
-    for(const g of dateObj.games||[]){
-      const homeId=g.teams?.home?.team?.id;
-      const awayId=g.teams?.away?.team?.id;
-      if(!NL_WEST_IDS.has(homeId) && !NL_WEST_IDS.has(awayId)) continue;
+      if (!NL_WEST_IDS.has(homeId) && !NL_WEST_IDS.has(awayId)) continue;
 
-      const state=g.status?.abstractGameState;
-      const startUTC=new Date(g.gameDate);
-      const localTime=startUTC.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-
-      /* Scores — try multiple paths */
-      const homeRuns = g.teams?.home?.score ?? g.linescore?.teams?.home?.runs ?? 0;
-      const awayRuns = g.teams?.away?.score ?? g.linescore?.teams?.away?.runs ?? 0;
-
-      const inning=g.linescore?.currentInning??null;
-      const half=g.linescore?.inningHalf??null;
-
-      /* Abbreviations — use enriched map, fall back to hardcoded */
-      const homeAbbr = g.teams?.home?.team?.abbreviation || ID_TO_ABBR[homeId] || '???';
-      const awayAbbr = g.teams?.away?.team?.abbreviation || ID_TO_ABBR[awayId] || '???';
-
-      const info={state,detailedState:g.status?.detailedState??'',localTime,homeId,awayId,homeRuns,awayRuns,inning,half,homeAbbr,awayAbbr};
-      if(NL_WEST_IDS.has(homeId)) todayGames[homeId]=info;
-      if(NL_WEST_IDS.has(awayId)) todayGames[awayId]=info;
+      const startUTC = new Date(g.gameDate);
+      const info = {
+        state:         g.status?.abstractGameState,
+        detailedState: g.status?.detailedState ?? '',
+        localTime:     startUTC.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+        homeId, awayId,
+        homeRuns: g.teams?.home?.score ?? g.linescore?.teams?.home?.runs ?? 0,
+        awayRuns: g.teams?.away?.score ?? g.linescore?.teams?.away?.runs ?? 0,
+        inning:   g.linescore?.currentInning ?? null,
+        half:     g.linescore?.inningHalf ?? null,
+        homeAbbr: hAbbr || ID_TO_ABBR[homeId] || '???',
+        awayAbbr: aAbbr || ID_TO_ABBR[awayId] || '???',
+      };
+      if (NL_WEST_IDS.has(homeId)) todayGames[homeId] = info;
+      if (NL_WEST_IDS.has(awayId)) todayGames[awayId] = info;
     }
   }
 
   /* Sort NL West */
-  const sorted=[...NL_WEST].sort((a,b)=>{
-    const wa=wlMap[a.id]?.w??0, wb=wlMap[b.id]?.w??0;
-    const la=wlMap[a.id]?.l??0, lb=wlMap[b.id]?.l??0;
-    return wb!==wa?wb-wa:la-lb;
+  const sorted = [...NL_WEST].sort((a, b) => {
+    const wa = wlMap[a.id]?.w ?? 0, wb = wlMap[b.id]?.w ?? 0;
+    const la = wlMap[a.id]?.l ?? 0, lb = wlMap[b.id]?.l ?? 0;
+    return wb !== wa ? wb - wa : la - lb;
   });
-  const leaderRec=wlMap[sorted[0].id]??{w:0,l:0};
+  const leaderRec = wlMap[sorted[0].id] ?? { w: 0, l: 0 };
 
-  const suffix=n=>[,'st','nd','rd'][n]||'th';
+  /* Build rows with .map().join('') instead of `+=` accumulation */
+  const html = sorted.map((team, idx) => {
+    const rec = wlMap[team.id] ?? { w: 0, l: 0 };
+    const isPadres = team.id === PADRES_ID;
 
-  let html='';
-  sorted.forEach((team,idx)=>{
-    const rec=wlMap[team.id]??{w:0,l:0};
-    const isPadres=team.id===PADRES_ID;
-    const pct=rec.w+rec.l>0?(rec.w/(rec.w+rec.l)).toFixed(3).replace(/^0/,''):'.000';
-    let gb='—';
-    if(idx>0){
-      const n=((leaderRec.w-rec.w)+(rec.l-leaderRec.l))/2;
-      gb=n<=0?'—':n%1===0?String(n):n.toFixed(1);
+    let pct = '.000';
+    const totalGames = rec.w + rec.l;
+    if (totalGames > 0) {
+      pct = (rec.w / totalGames).toFixed(3).replace(/^0/, '');
     }
 
-    const g=todayGames[team.id];
-    let gameCell=`<div class="no-game">Off day</div>`;
-
-    if(g){
-      const isHome  = g.homeId===team.id;
-      const myAbbr  = isHome ? g.homeAbbr : g.awayAbbr;
-      const oppAbbr = isHome ? g.awayAbbr : g.homeAbbr;
-      const myRuns  = isHome ? g.homeRuns : g.awayRuns;
-      const oppRuns = isHome ? g.awayRuns : g.homeRuns;
-      const vsAt    = isHome ? 'vs' : '@';
-
-      if(g.state==='Live'){
-        const isWarmup = g.detailedState.toLowerCase().includes('warm')
-                      || (!g.inning && !g.half)
-                      || (g.inning === 1 && !g.half);
-        const inningStr = isWarmup
-          ? 'Warming Up'
-          : g.inning ? `${g.half??''} ${g.inning}${suffix(g.inning)}` : 'Live';
-        const scoreStr = isWarmup
-          ? `${myAbbr} – ${oppAbbr}`
-          : `${myAbbr} ${myRuns} – ${oppRuns} ${oppAbbr}`;
-        gameCell=`
-          <div class="game-live">
-            <span class="live-dot"></span>
-            <span class="game-scoreline">${scoreStr}</span>
-          </div>
-          <div class="game-sub">${inningStr}</div>`;
-      } else if(g.state==='Final' && g.detailedState.toLowerCase().includes('final')){
-        const won=myRuns>oppRuns;
-        const myColor  = won ? 'var(--cream)' : 'var(--no)';
-        const oppColor = won ? 'var(--no)'   : 'var(--cream)';
-        gameCell=`
-          <div class="game-scoreline">
-            <span style="color:${myColor}">${myAbbr} ${myRuns}</span>
-            <span style="color:var(--cream-muted)"> – </span>
-            <span style="color:${oppColor}">${oppRuns} ${oppAbbr}</span>
-          </div>
-          <div class="game-sub">Final</div>`;
-      } else {
-        gameCell=`
-          <div class="game-time">${g.localTime}</div>
-          <div class="game-sub">${vsAt} ${oppAbbr}</div>`;
-      }
+    let gb = '—';
+    if (idx > 0) {
+      const n = ((leaderRec.w - rec.w) + (rec.l - leaderRec.l)) / 2;
+      gb = n <= 0 ? '—' : (n % 1 === 0 ? String(n) : n.toFixed(1));
     }
 
-    html+=`
-      <tr class="${isPadres?'padres-row':''}">
-        <td>
-          <div class="team-name-cell">
-            <span class="team-abbr ${isPadres?'padres':''}">${team.abbr}</span>
-            <span class="team-full">${team.name}</span>
-          </div>
-        </td>
-        <td class="num"><div class="record">${rec.w}</div></td>
-        <td class="num"><div class="record">${rec.l}</div></td>
-        <td class="num"><div class="pct">${pct}</div></td>
-        <td class="num hide-mobile"><div class="gb">${gb}</div></td>
-        <td class="num"><div class="record">${rec.l10w}-${rec.l10l}</div></td>
-        <td class="next-game-cell">${gameCell}</td>
-      </tr>`;
-  });
+    const gameCell = buildGameCell(todayGames[team.id]);
 
-  document.getElementById('standingsBody').innerHTML=html;
+    return `<tr class="${isPadres ? 'padres-row' : ''}">
+      <td>
+        <div class="team-name-cell">
+          <span class="team-abbr ${isPadres ? 'padres' : ''}">${team.abbr}</span>
+          <span class="team-full">${team.name}</span>
+        </div>
+      </td>
+      <td class="num"><div class="record">${rec.w}</div></td>
+      <td class="num"><div class="record">${rec.l}</div></td>
+      <td class="num"><div class="pct">${pct}</div></td>
+      <td class="num hide-mobile"><div class="gb">${gb}</div></td>
+      <td class="num"><div class="record">${rec.l10w}-${rec.l10l}</div></td>
+      <td class="next-game-cell">${gameCell}</td>
+    </tr>`;
+  }).join('');
+
+  $.standingsBody.innerHTML = html;
 }
 
-async function render(){
-  document.getElementById('headerDate').textContent=formatDisplayDate(getLocalDateStr(0));
-  document.getElementById('grid').innerHTML=PROMOS.map(p=>cardHTML(p,{status:'loading'})).join('');
+function buildGameCell(g) {
+  if (!g) return '<div class="no-game">Off day</div>';
 
-  const yesterdayStr=getLocalDateStr(-1);
-  const schedRes=await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${yesterdayStr}&teamId=${PADRES_ID}&gameType=R&hydrate=linescore`);
-  const schedData=await schedRes.json();
+  const teamId  = NL_WEST_IDS.has(g.homeId) ? g.homeId : g.awayId;
+  const isHome  = g.homeId === teamId;
+  const myAbbr  = isHome ? g.homeAbbr : g.awayAbbr;
+  const oppAbbr = isHome ? g.awayAbbr : g.homeAbbr;
+  const myRuns  = isHome ? g.homeRuns : g.awayRuns;
+  const oppRuns = isHome ? g.awayRuns : g.homeRuns;
+  const vsAt    = isHome ? 'vs' : '@';
 
-  const game=schedData.dates?.[0]?.games?.find(g=>
-    g.status.abstractGameState==='Final'||g.status.abstractGameState==='Live'
-  );
-
-  if(!game){
-    document.getElementById('grid').innerHTML=PROMOS.map(p=>cardHTML(p,{status:'nogame'})).join('');
-    document.getElementById('matchupLine').textContent='';
-  } else {
-    const isLive=game.status.abstractGameState==='Live';
-    const boxRes=await fetch(`https://statsapi.mlb.com/api/v1/game/${game.gamePk}/boxscore`);
-    const box=await boxRes.json();
-    const homeId=box.teams.home.team.id;
-    const padresSide=homeId===PADRES_ID?'home':'away';
-    const oppSide=padresSide==='home'?'away':'home';
-    const padresRuns=box.teams[padresSide].teamStats?.batting?.runs??0;
-    const oppRuns=box.teams[oppSide].teamStats?.batting?.runs??0;
-    const isWin=!isLive&&padresRuns>oppRuns;
-    const oppName=box.teams[oppSide].team.name;
-    const score={padres:padresRuns,opp:oppRuns};
-    const status=isLive?'live':'final';
-
-    const awayLabel=padresSide==='away'?'Padres':oppName;
-    const homeLabel=padresSide==='home'?'Padres':oppName;
-    const awayR=padresSide==='away'?padresRuns:oppRuns;
-    const homeR=padresSide==='home'?padresRuns:oppRuns;
-
-    document.getElementById('grid').innerHTML=PROMOS.map(promo=>{
-      const{value,label}=promo.stat(box,padresSide,isWin);
-      return cardHTML(promo,{status,value,label,isWin,score});
-    }).join('');
-
-    document.getElementById('matchupLine').innerHTML=isLive
-      ?`<span style="color:var(--gold-bright)">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayR} — ${homeR} ${homeLabel}`
-      :`${awayLabel} ${awayR} — ${homeR} ${homeLabel}`;
+  if (g.state === 'Live') {
+    const detailLower = g.detailedState.toLowerCase();
+    const isWarmup = detailLower.includes('warm')
+                  || (!g.inning && !g.half)
+                  || (g.inning === 1 && !g.half);
+    const inningStr = isWarmup
+      ? 'Warming Up'
+      : g.inning ? `${g.half ?? ''} ${g.inning}${ordinalSuffix(g.inning)}` : 'Live';
+    const scoreStr = isWarmup
+      ? `${myAbbr} – ${oppAbbr}`
+      : `${myAbbr} ${myRuns} – ${oppRuns} ${oppAbbr}`;
+    return `<div class="game-live"><span class="live-dot"></span><span class="game-scoreline">${scoreStr}</span></div><div class="game-sub">${inningStr}</div>`;
   }
 
-  // After both panels load, lock both to standingsPanel height
-  Promise.all([
-    fetchNLWest().catch(err=>{
-      document.getElementById('standingsBody').innerHTML=
-        `<tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--no);font-size:0.44rem">Error loading standings: ${err.message}</td></tr>`;
-    }),
-    fetchPadresGame().catch(err=>{
-      document.getElementById('gamePanel').innerHTML=
-        `<div class="gpc tl"></div><div class="gpc tr"></div><div class="gpc bl"></div><div class="gpc br"></div>
-         <div style="text-align:center;padding:0.8rem;color:var(--no);font-size:0.4rem">Error: ${err.message}</div>`;
-    })
-  ]).then(() => {
-    // Small defer to let DOM paint
-    requestAnimationFrame(() => {
-      const standings = document.querySelector('.nlwest-panel');
-      const gamePanel = document.getElementById('gamePanel');
-      if (!standings || !gamePanel) return;
-      // Use standings height as the fixed height for both
-      const h = standings.getBoundingClientRect().height;
-      if (h > 0) {
-        standings.style.height = h + 'px';
-        standings.style.overflowY = 'auto';
-        gamePanel.style.height = h + 'px';
-        gamePanel.style.overflowY = 'hidden';
-      }
-    });
-  });
+  if (g.state === 'Final' && g.detailedState.toLowerCase().includes('final')) {
+    const won = myRuns > oppRuns;
+    const myCls  = won ? 'score-team-won'  : 'score-team-lost';
+    const oppCls = won ? 'score-team-lost' : 'score-team-won';
+    return `<div class="game-scoreline">
+      <span class="${myCls}">${myAbbr} ${myRuns}</span><span class="score-dash"> – </span><span class="${oppCls}">${oppRuns} ${oppAbbr}</span>
+    </div><div class="game-sub">Final</div>`;
+  }
+
+  return `<div class="game-time">${g.localTime}</div><div class="game-sub">${vsAt} ${oppAbbr}</div>`;
 }
 
-/* ── Phone detection ── */
-(function() {
+/* ── Padres game panel ────────────────────────────────────────── */
+function buildLineupEntry(p, players, pid, i) {
+  const name = p?.person?.fullName ?? `Player ${pid}`;
+  const pos  = p?.position?.abbreviation ?? p?.allPositions?.[0]?.abbreviation ?? '';
+  const isSub = p?.gameStatus?.isSubstitute ?? false;
+  return { num: i + 1, name, last: lastName(name), pos, id: pid, isSub };
+}
+
+function getLineup(side, feed, box) {
+  const feedTeam     = feed.liveData?.boxscore?.teams?.[side];
+  const battingOrder = feedTeam?.battingOrder ?? [];
+
+  if (battingOrder.length > 0) {
+    const players = feedTeam?.players ?? {};
+    return battingOrder.slice(0, 9).map((pid, i) =>
+      buildLineupEntry(players[`ID${pid}`], players, pid, i)
+    );
+  }
+
+  /* Fallback: boxscore batters */
+  const batters = box.teams[side].batters ?? [];
+  const players = box.teams[side].players ?? {};
+  return batters.slice(0, 9).map((pid, i) =>
+    buildLineupEntry(players[`ID${pid}`], players, pid, i)
+  );
+}
+
+function getActivePitcher(feedTeam) {
+  const pitchers = feedTeam?.pitchers ?? [];
+  const players  = feedTeam?.players ?? {};
+  for (let i = pitchers.length - 1; i >= 0; i--) {
+    const p = players[`ID${pitchers[i]}`];
+    if (p?.stats?.pitching) return p.person?.fullName ?? '—';
+  }
+  return '—';
+}
+
+function getPitchCount(feedTeam) {
+  const pitchers = feedTeam?.pitchers ?? [];
+  const players  = feedTeam?.players ?? {};
+  for (let i = pitchers.length - 1; i >= 0; i--) {
+    const p = players[`ID${pitchers[i]}`];
+    if (p?.stats?.pitching) {
+      return p.stats.pitching.pitchesThrown ?? p.stats.pitching.numberOfPitches ?? null;
+    }
+  }
+  return null;
+}
+
+function diamondSVG(first, second, third) {
+  const pad = 14, size = 80, bs = 26, cx = size / 2;
+  const top   = { x: cx,              y: bs / 2 + 1 };
+  const right = { x: size - bs / 2 - 1, y: cx };
+  const left  = { x: bs / 2 + 1,        y: cx };
+  const dim = 'rgba(200,146,42,0.7)', lit = '#E8B84B';
+  const totalW = size + pad * 2, totalH = size + pad * 2;
+
+  const baseRect = (px, py, on) => {
+    const ox = px + pad, oy = py + pad;
+    return `<rect x="${ox - bs / 2}" y="${oy - bs / 2}" width="${bs}" height="${bs}" fill="${on ? lit : 'transparent'}" stroke="${on ? lit : dim}" stroke-width="2.5" transform="rotate(45 ${ox} ${oy})" rx="1"/>`;
+  };
+
+  return `<svg width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">${baseRect(right.x, right.y, first)}${baseRect(top.x, top.y, second)}${baseRect(left.x, left.y, third)}</svg>`;
+}
+
+async function fetchPadresGame() {
+  const todayStr = getLocalDateStr(0);
+  const schedData = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${todayStr}&teamId=${PADRES_ID}&gameType=R&hydrate=linescore`);
+  const games = schedData.dates?.[0]?.games ?? [];
+  const liveGame = games.find(g => g.status.abstractGameState === 'Live');
+
+  if (liveGame) {
+    startGamePolling();
+    return renderLiveGame(liveGame);
+  }
+
+  /* No live game — stop polling and find next scheduled game */
+  stopGamePolling();
+  return renderNextGame();
+}
+
+async function renderLiveGame(liveGame) {
+  const [feed, box] = await Promise.all([
+    fetchJSON(`${STATS_API_V11}/game/${liveGame.gamePk}/feed/live`),
+    fetchJSON(`${STATS_API}/game/${liveGame.gamePk}/boxscore`),
+  ]);
+
+  const linescore = feed.liveData?.linescore ?? {};
+  const play      = feed.liveData?.plays?.currentPlay ?? {};
+  const matchup   = play.matchup ?? {};
+  const offense   = linescore.offense ?? {};
+
+  const detailedState = liveGame.status?.detailedState ?? '';
+  const isWarmup =
+       detailedState.toLowerCase().includes('warm')
+    || (!play.atBatIndex && !play.matchup?.pitcher)
+    || (linescore.currentInning === 1 && !feed.liveData?.plays?.allPlays?.length);
+
+  const homeTeamId = feed.gameData?.teams?.home?.id;
+  const awayId     = feed.gameData?.teams?.away?.id;
+  const padresSide = homeTeamId === PADRES_ID ? 'home' : 'away';
+  const oppSide    = padresSide === 'home' ? 'away' : 'home';
+  const oppAbbr    = ID_TO_ABBR[padresSide === 'home' ? awayId : homeTeamId] ?? '???';
+
+  const padresShortName = feed.gameData?.teams?.[padresSide]?.teamName ?? 'Padres';
+  const oppShortName    = feed.gameData?.teams?.[oppSide]?.teamName    ?? oppAbbr;
+
+  const homeRuns = linescore.teams?.home?.runs ?? 0;
+  const awayRuns = linescore.teams?.away?.runs ?? 0;
+  const padresRuns = padresSide === 'home' ? homeRuns : awayRuns;
+  const oppRuns    = padresSide === 'home' ? awayRuns : homeRuns;
+
+  const inning = linescore.currentInning ?? 1;
+  const half   = linescore.inningHalf ?? 'Top';
+  const outs   = linescore.outs ?? 0;
+  const onFirst  = !!offense.first;
+  const onSecond = !!offense.second;
+  const onThird  = !!offense.third;
+
+  const currentBatter = matchup.batter?.fullName ?? offense.batter?.fullName ?? '—';
+  const batterCount   = play.count ? `${play.count.balls}-${play.count.strikes}` : '';
+  const currentBatterLast = lastName(currentBatter);
+
+  const halfIsTop  = half.toLowerCase().includes('top');
+  const halfArrow = halfIsTop ? '▲' : '▼';
+
+  const padresLineup = getLineup(padresSide, feed, box);
+  const oppLineup    = getLineup(oppSide,    feed, box);
+
+  const feedHome = feed.liveData?.boxscore?.teams?.home;
+  const feedAway = feed.liveData?.boxscore?.teams?.away;
+  const padresFeedTeam = padresSide === 'home' ? feedHome : feedAway;
+  const oppFeedTeam    = padresSide === 'home' ? feedAway : feedHome;
+
+  const padresPitcherLast = lastName(getActivePitcher(padresFeedTeam));
+  const oppPitcherLast    = lastName(getActivePitcher(oppFeedTeam));
+  const padresPitchCount  = getPitchCount(padresFeedTeam);
+  const oppPitchCount     = getPitchCount(oppFeedTeam);
+
+  const lineupHTML = (lineup, side) => {
+    const isBatting = halfIsTop ? side === oppSide : side === padresSide;
+    const isRight   = side === oppSide;
+    return lineup.map(p => {
+      const isCurrent = isBatting && p.last === currentBatterLast && !isWarmup;
+      const subMark = p.isSub ? '<span class="sub-mark">↑</span>' : '';
+      const posStr  = `<span class="pos-tag">${p.pos}</span>`;
+      const inner = isRight
+        ? `${posStr} ${subMark}${p.last}<span class="order-num">${p.num}.</span>`
+        : `<span class="order-num">${p.num}.</span>${p.last}${subMark}${posStr}`;
+      return `<li class="${isCurrent ? 'current-batter' : ''}">${inner}</li>`;
+    }).join('');
+  };
+
+  const statusBlock = isWarmup
+    ? `<div class="gp-warmup-badge">⚾ Warming Up</div>
+       <div class="gp-inning-block">
+         <div class="gp-inning-num">Pre-Game</div>
+         <div class="gp-inning-word">First Pitch Soon</div>
+       </div>`
+    : '<div class="gp-live-badge"><span class="live-dot"></span> Live</div>';
+
+  const inningBlock = isWarmup ? '' : `
+    <div class="gp-inning-block-mid">
+      <div class="gp-half-arrow-sm">${halfArrow}</div>
+      <div class="gp-inning-big">${inning}${ordinalSuffix(inning)}</div>
+      <div class="gp-count-big">${batterCount || '0-0'}</div>
+    </div>`;
+
+  /* Trim 3-letter abbrs to 2 for score display (CHC→CH, LAD→LA) */
+  const padresScoreAbbr = 'SD';
+  const oppScoreAbbr = oppAbbr.length >= 3 ? oppAbbr.slice(0, -1) : oppAbbr;
+
+  $.gamePanel.innerHTML = `${CORNERS_HTML}
+    <div class="gp-body">
+      <div class="gp-left">
+        <div class="gp-lineup-name padres">${padresShortName}</div>
+        <ul class="gp-lineup">${lineupHTML(padresLineup, padresSide)}</ul>
+        <div class="gp-pitcher-footer">
+          <div class="gp-pitcher-name"><span class="pos-tag">P </span>${padresPitcherLast}</div>
+          ${padresPitchCount != null ? `<div class="gp-pitcher-stat">${padresPitchCount} pitches</div>` : ''}
+        </div>
+      </div>
+      <div class="gp-mid">
+        ${statusBlock}
+        <div class="gp-diamond">${diamondSVG(onFirst, onSecond, onThird)}</div>
+        <div class="gp-outs-col">
+          <div class="gp-outs-label">Outs</div>
+          <div class="outs-pips">
+            <div class="out-pip ${outs >= 1 ? 'on' : ''}"></div>
+            <div class="out-pip ${outs >= 2 ? 'on' : ''}"></div>
+            <div class="out-pip ${outs >= 3 ? 'on' : ''}"></div>
+          </div>
+        </div>
+        <div class="gp-center-score">
+          <span class="gp-center-team padres">${padresScoreAbbr}</span>
+          <span class="gp-center-runs">${padresRuns}</span>
+          <span class="gp-center-dash">–</span>
+          <span class="gp-center-runs">${oppRuns}</span>
+          <span class="gp-center-team opp">${oppScoreAbbr}</span>
+        </div>
+        ${inningBlock}
+      </div>
+      <div class="gp-right">
+        <div class="gp-lineup-name opp">${oppShortName}</div>
+        <ul class="gp-lineup">${lineupHTML(oppLineup, oppSide)}</ul>
+        <div class="gp-pitcher-footer">
+          <div class="gp-pitcher-name">${oppPitcherLast}<span class="pos-tag"> P</span></div>
+          ${oppPitchCount != null ? `<div class="gp-pitcher-stat">${oppPitchCount} pitches</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+
+  return true; /* live game still in progress */
+}
+
+async function renderNextGame() {
+  for (let offset = 0; offset <= 10; offset++) {
+    const dateStr = getLocalDateStr(offset);
+    const sData = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${dateStr}&teamId=${PADRES_ID}&gameType=R`);
+    const nextGames = sData.dates?.[0]?.games ?? [];
+    const next = nextGames.find(g =>
+         g.status.abstractGameState === 'Preview'
+      || g.status.detailedState === 'Scheduled'
+    );
+
+    if (!next) continue;
+
+    const homeId = next.teams.home.team.id;
+    const awayId = next.teams.away.team.id;
+    const homeAbbr = next.teams.home.team.abbreviation || ID_TO_ABBR[homeId] || '???';
+    const awayAbbr = next.teams.away.team.abbreviation || ID_TO_ABBR[awayId] || '???';
+    const startUTC = new Date(next.gameDate);
+    const timeStr = startUTC.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+    const dateLbl = startUTC.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+    $.gamePanel.innerHTML = `${CORNERS_HTML}
+      <div class="gp-next">
+        <div class="gp-next-label">Next Game</div>
+        <div class="gp-next-teams">${awayAbbr} @ ${homeAbbr}</div>
+        <div class="gp-next-time">${timeStr}</div>
+        <div class="gp-next-date">${dateLbl}</div>
+      </div>`;
+    return false;
+  }
+
+  $.gamePanel.innerHTML = `${CORNERS_HTML}<div class="gp-next"><div class="gp-next-label">No upcoming games found</div></div>`;
+  return false;
+}
+
+/* ── Polling ──────────────────────────────────────────────────── */
+let _gamePollInterval = null;
+let _standingsPollInterval = null;
+
+function startGamePolling() {
+  if (_gamePollInterval) return;
+  _gamePollInterval = setInterval(async () => {
+    if (document.visibilityState === 'hidden') return; /* don't burn requests when tab is hidden */
+    try {
+      const isStillLive = await fetchPadresGame();
+      if (!isStillLive) stopGamePolling();
+    } catch { /* panel already shows error */ }
+  }, GAME_POLL_MS);
+}
+
+function stopGamePolling() {
+  if (_gamePollInterval) {
+    clearInterval(_gamePollInterval);
+    _gamePollInterval = null;
+  }
+}
+
+function startStandingsPolling() {
+  if (_standingsPollInterval) return;
+  _standingsPollInterval = setInterval(() => {
+    if (document.visibilityState === 'hidden') return;
+    fetchNLWest().catch(() => {});
+  }, STANDINGS_POLL_MS);
+}
+
+/* When the tab becomes visible again, do an immediate refresh so we're
+   not staring at stale data while we wait for the next interval tick. */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  fetchNLWest().catch(() => {});
+  if (_gamePollInterval) fetchPadresGame().catch(() => {});
+});
+
+/* ── Panel height locking ─────────────────────────────────────── */
+/* Keep the two top panels equal height. Original ran this once and
+   left fixed pixel heights forever; this re-runs on resize (debounced). */
+let _resizeTimer = null;
+function lockPanelHeights() {
+  if (!$.nlwestPanel || !$.gamePanel) return;
+  /* Reset before measuring so we measure natural content height */
+  $.nlwestPanel.style.height = '';
+  $.gamePanel.style.height = '';
+  const h = $.nlwestPanel.getBoundingClientRect().height;
+  if (h > 0) {
+    $.nlwestPanel.style.height  = h + 'px';
+    $.nlwestPanel.style.overflowY = 'auto';
+    $.gamePanel.style.height    = h + 'px';
+    $.gamePanel.style.overflowY = 'hidden';
+  }
+}
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(lockPanelHeights, 150);
+});
+
+/* ── Render orchestration ─────────────────────────────────────── */
+async function renderPromos() {
+  $.headerDate.textContent = formatDisplayDate(getLocalDateStr(0));
+  renderAllCards(() => ({ status: 'loading' }));
+
+  const yesterdayStr = getLocalDateStr(-1);
+  const schedData = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${yesterdayStr}&teamId=${PADRES_ID}&gameType=R&hydrate=linescore`);
+
+  const game = schedData.dates?.[0]?.games?.find(g =>
+       g.status.abstractGameState === 'Final'
+    || g.status.abstractGameState === 'Live'
+  );
+
+  if (!game) {
+    renderAllCards(() => ({ status: 'nogame' }));
+    $.matchupLine.textContent = '';
+    return;
+  }
+
+  const isLive = game.status.abstractGameState === 'Live';
+  const box = await fetchJSON(`${STATS_API}/game/${game.gamePk}/boxscore`);
+  const homeId = box.teams.home.team.id;
+  const padresSide = homeId === PADRES_ID ? 'home' : 'away';
+  const oppSide    = padresSide === 'home' ? 'away' : 'home';
+  const padresRuns = box.teams[padresSide].teamStats?.batting?.runs ?? 0;
+  const oppRuns    = box.teams[oppSide].teamStats?.batting?.runs ?? 0;
+  const isWin = !isLive && padresRuns > oppRuns;
+  const oppName = box.teams[oppSide].team.name;
+  const score = { padres: padresRuns, opp: oppRuns };
+  const status = isLive ? 'live' : 'final';
+
+  const awayLabel = padresSide === 'away' ? 'Padres' : oppName;
+  const homeLabel = padresSide === 'home' ? 'Padres' : oppName;
+  const awayR = padresSide === 'away' ? padresRuns : oppRuns;
+  const homeR = padresSide === 'home' ? padresRuns : oppRuns;
+
+  renderAllCards(promo => {
+    const { value, label } = promo.stat(box, padresSide, isWin);
+    return { status, value, label, isWin, score };
+  });
+
+  $.matchupLine.innerHTML = isLive
+    ? `<span style="color:var(--gold-bright)">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayR} — ${homeR} ${homeLabel}`
+    : `${awayLabel} ${awayR} — ${homeR} ${homeLabel}`;
+}
+
+async function init() {
+  /* Kick off the three independent fetches in parallel. The original
+     ran the promo fetch sequentially, *then* started standings + game
+     panel — so the dashboard waited on the slowest path twice over. */
+  const promosTask = renderPromos().catch(() => {
+    $.grid.innerHTML = PROMOS.map(p => cardHTML(p, { status: 'nogame' })).join('');
+  });
+  const standingsTask = fetchNLWest().catch(err => {
+    $.standingsBody.innerHTML = `<tr><td colspan="7" class="cell-error">Error loading standings: ${err.message}</td></tr>`;
+  });
+  const gameTask = fetchPadresGame().catch(err => {
+    $.gamePanel.innerHTML = `${CORNERS_HTML}<div class="panel-error">Error: ${err.message}</div>`;
+  });
+
+  await Promise.all([promosTask, standingsTask, gameTask]);
+
+  /* After both panels load, lock both to standingsPanel height */
+  requestAnimationFrame(lockPanelHeights);
+
+  /* Begin background polling for standings (game polling self-starts
+     when a live game is detected) */
+  startStandingsPolling();
+}
+
+/* ── Phone detection ──────────────────────────────────────────── */
+(() => {
   const ua = navigator.userAgent || '';
   const isPhone = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
     || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
   if (isPhone) document.body.classList.add('is-phone');
 })();
 
-render();
+init();
 
-/* ── Auto-refresh game panel every 15s when a game is live ── */
-let _gamePollInterval = null;
-
-function startGamePolling() {
-  if (_gamePollInterval) return; // already running
-  _gamePollInterval = setInterval(async () => {
-    try {
-      const isStillLive = await fetchPadresGame();
-      // fetchPadresGame returns true if live, false/undefined if not
-      if (!isStillLive) stopGamePolling();
-    } catch (e) { /* silent — panel already shows error from fetchPadresGame */ }
-  }, 15000);
-}
-
-function stopGamePolling() {
-  if (_gamePollInterval) { clearInterval(_gamePollInterval); _gamePollInterval = null; }
-}
-
-/* ── Poll standings every 30s ── */
-setInterval(() => {
-  fetchNLWest().catch(() => {});
-}, 30000);
-
-/* ── Padres live game / next game panel ── */
-async function fetchPadresGame() {
-  const todayStr = getLocalDateStr(0);
-  const panel    = document.getElementById('gamePanel');
-  const corners  = `<div class="gpc tl"></div><div class="gpc tr"></div><div class="gpc bl"></div><div class="gpc br"></div>`;
-
-  const schedRes  = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${todayStr}&teamId=${PADRES_ID}&gameType=R&hydrate=linescore`);
-  const schedData = await schedRes.json();
-  const games     = schedData.dates?.[0]?.games ?? [];
-  const liveGame  = games.find(g => g.status.abstractGameState === 'Live');
-
-  if (liveGame) {
-    startGamePolling(); // kick off or keep polling
-    // Fetch live feed + boxscore in parallel
-    const [feedRes, boxRes] = await Promise.all([
-      fetch(`https://statsapi.mlb.com/api/v1.1/game/${liveGame.gamePk}/feed/live`),
-      fetch(`https://statsapi.mlb.com/api/v1/game/${liveGame.gamePk}/boxscore`)
-    ]);
-    const feed = await feedRes.json();
-    const box  = await boxRes.json();
-
-    const linescore = feed.liveData?.linescore ?? {};
-    const play      = feed.liveData?.plays?.currentPlay ?? {};
-    const matchup   = play.matchup ?? {};
-    const offense   = linescore.offense ?? {};
-    const defense   = linescore.defense ?? {};
-
-    // Warmup = game is "Live" but no pitches have been thrown yet
-    // detailedState will be "Warmup" or currentInningOrdinal will be missing
-    const detailedState  = liveGame.status?.detailedState ?? '';
-    const isWarmup       = detailedState.toLowerCase().includes('warm')
-                        || !play.atBatIndex && !play.matchup?.pitcher
-                        || (linescore.currentInning === 1 && !feed.liveData?.plays?.allPlays?.length);
-
-    const homeTeamId  = feed.gameData?.teams?.home?.id;
-    const padresSide  = homeTeamId === PADRES_ID ? 'home' : 'away';
-    const oppSide     = padresSide === 'home' ? 'away' : 'home';
-    const awayId      = feed.gameData?.teams?.away?.id;
-    const oppAbbr     = ID_TO_ABBR[padresSide === 'home' ? awayId : homeTeamId] ?? '???';
-
-    // Short team names (no city) — e.g. "Padres", "Cubs"
-    const padresShortName = feed.gameData?.teams?.[padresSide]?.teamName ?? 'Padres';
-    const oppShortName    = feed.gameData?.teams?.[oppSide]?.teamName    ?? oppAbbr;
-
-    const homeRuns    = linescore.teams?.home?.runs ?? 0;
-    const awayRuns    = linescore.teams?.away?.runs ?? 0;
-    const padresRuns  = padresSide === 'home' ? homeRuns : awayRuns;
-    const oppRuns     = padresSide === 'home' ? awayRuns : homeRuns;
-
-    const inning      = linescore.currentInning ?? 1;
-    const half        = linescore.inningHalf ?? 'Top';
-    const outs        = linescore.outs ?? 0;
-    const onFirst     = !!offense.first;
-    const onSecond    = !!offense.second;
-    const onThird     = !!offense.third;
-
-    const currentBatter  = matchup.batter?.fullName  ?? offense.batter?.fullName  ?? '—';
-    const batterCount    = play.count ? `${play.count.balls}-${play.count.strikes}` : '';
-
-    // Returns last name respecting Jr./Sr./II/III/IV suffixes
-    function lastName(fullName) {
-      const parts = fullName.split(' ');
-      const suffixes = ['jr.','sr.','ii','iii','iv','v'];
-      if (parts.length >= 3 && suffixes.includes(parts[parts.length - 1].toLowerCase())) {
-        return parts[parts.length - 2] + ' ' + parts[parts.length - 1];
-      }
-      return parts[parts.length - 1];
-    }
-
-    function getLineup(side) {
-      // Use the live feed's battingOrder — this updates in real time with substitutions
-      // Fall back to boxscore batters if live feed data isn't available
-      const feedTeam    = feed.liveData?.boxscore?.teams?.[side];
-      const feedPlayers = feedTeam?.players ?? {};
-      const battingOrder = feedTeam?.battingOrder ?? [];
-
-      if (battingOrder.length > 0) {
-        return battingOrder.slice(0, 9).map((pid, i) => {
-          const key  = `ID${pid}`;
-          const p    = feedPlayers[key] ?? {};
-          const name = p.person?.fullName ?? `Player ${pid}`;
-          const pos  = p.position?.abbreviation ?? p.allPositions?.[0]?.abbreviation ?? '';
-          const parts = name.split(' ');
-          const suffixes = ['jr.','sr.','ii','iii','iv','v'];
-          let last;
-          if (parts.length >= 3 && suffixes.includes(parts[parts.length - 1].toLowerCase())) {
-            last = parts[parts.length - 2] + ' ' + parts[parts.length - 1];
-          } else {
-            last = parts[parts.length - 1];
-          }
-          const isSub = p.gameStatus?.isSubstitute ?? false;
-          return { num: i + 1, name, last, pos, id: pid, isSub };
-        });
-      }
-
-      // Fallback: boxscore batters list
-      const batters  = box.teams[side].batters ?? [];
-      const players  = box.teams[side].players ?? {};
-      return batters.slice(0, 9).map((pid, i) => {
-        const p    = players[`ID${pid}`] ?? {};
-        const name = p.person?.fullName ?? `Player ${pid}`;
-        const pos  = p.position?.abbreviation ?? '';
-        const parts = name.split(' ');
-        const suffixes = ['jr.','sr.','ii','iii','iv','v'];
-        let last;
-        if (parts.length >= 3 && suffixes.includes(parts[parts.length - 1].toLowerCase())) {
-          last = parts[parts.length - 2] + ' ' + parts[parts.length - 1];
-        } else {
-          last = parts[parts.length - 1];
-        }
-        return { num: i + 1, name, last, pos, id: pid, isSub: false };
-      });
-    }
-
-    const padresLineup = getLineup(padresSide);
-    const oppLineup    = getLineup(oppSide);
-    const currentBatterLast  = lastName(currentBatter);
-    const suffix    = n => [,'st','nd','rd'][n] || 'th';
-    const halfArrow = half.toLowerCase().includes('top') ? '▲' : '▼';
-    const halfWord  = half.toLowerCase().includes('top') ? 'Top' : 'Bot';
-
-    function lineupHTML(lineup, side) {
-      const isBatting  = half.toLowerCase().includes('top') ? side === oppSide : side === padresSide;
-      const isRight    = side === oppSide;
-      return lineup.map(p => {
-        const isCurrent = isBatting && p.last === currentBatterLast && !isWarmup;
-        const subMark   = p.isSub ? `<span class="sub-mark">↑</span>` : '';
-        const posStr    = `<span class="pos-tag">${p.pos}</span>`;
-
-        let inner;
-        if (isRight) {
-          // Right: POS[space] Name↑ .num
-          inner = `${posStr} ${subMark}${p.last}<span class="order-num">${p.num}.</span>`;
-        } else {
-          // Left: num. Name↑ POS
-          inner = `<span class="order-num">${p.num}.</span>${p.last}${subMark}${posStr}`;
-        }
-        return `<li class="${isCurrent ? 'current-batter' : ''}">${inner}</li>`;
-      }).join('');
-    }
-
-    // Middle column status block
-    const statusBlock = isWarmup
-      ? `<div class="gp-warmup-badge">⚾ Warming Up</div>
-         <div class="gp-inning-block">
-           <div class="gp-inning-num">Pre-Game</div>
-           <div class="gp-inning-word">First Pitch Soon</div>
-         </div>`
-      : `<div class="gp-live-badge"><span class="live-dot"></span> Live</div>`;
-
-    // Get the opposing team's current pitcher too
-    const oppDefense     = feed.liveData?.linescore?.[oppSide === 'home' ? 'defense' : 'offense'] ?? {};
-    // More reliable: pull from boxscore current pitcher for each side
-    const feedHome       = feed.liveData?.boxscore?.teams?.home;
-    const feedAway       = feed.liveData?.boxscore?.teams?.away;
-    const padresFeedTeam = padresSide === 'home' ? feedHome : feedAway;
-    const oppFeedTeam    = padresSide === 'home' ? feedAway : feedHome;
-
-    // Current pitcher for each team = the pitcher listed in their pitchers array who is currently active
-    function getActivePitcher(feedTeam) {
-      const pitchers = feedTeam?.pitchers ?? [];
-      const players  = feedTeam?.players ?? {};
-      // Last pitcher in the array is current
-      for (let i = pitchers.length - 1; i >= 0; i--) {
-        const p = players[`ID${pitchers[i]}`];
-        if (p?.stats?.pitching) return p.person?.fullName ?? '—';
-      }
-      return '—';
-    }
-
-    const padresPitcher = getActivePitcher(padresFeedTeam);
-    const oppPitcher    = getActivePitcher(oppFeedTeam);
-    const padresPitcherLast = lastName(padresPitcher);
-    const oppPitcherLast    = lastName(oppPitcher);
-
-    // Pitch count for each active pitcher
-    function getPitchCount(feedTeam) {
-      const pitchers = feedTeam?.pitchers ?? [];
-      const players  = feedTeam?.players ?? {};
-      for (let i = pitchers.length - 1; i >= 0; i--) {
-        const p = players[`ID${pitchers[i]}`];
-        if (p?.stats?.pitching) return p.stats.pitching.pitchesThrown ?? p.stats.pitching.numberOfPitches ?? null;
-      }
-      return null;
-    }
-
-    const padresPitchCount = getPitchCount(padresFeedTeam);
-    const oppPitchCount    = getPitchCount(oppFeedTeam);
-
-    const inningBlock = isWarmup ? '' : `
-      <div class="gp-inning-block-mid">
-        <div class="gp-half-arrow-sm">${halfArrow}</div>
-        <div class="gp-inning-big">${inning}${suffix(inning)}</div>
-        <div class="gp-count-big">${batterCount || '0-0'}</div>
-      </div>`;
-
-    function diamondSVG(first, second, third) {
-      const pad  = 14, size = 80, bs = 26, cx = size / 2;
-      const top   = { x: cx,               y: bs/2 + 1 };
-      const right = { x: size - bs/2 - 1,  y: cx       };
-      const left  = { x: bs/2 + 1,         y: cx       };
-      const dim = 'rgba(200,146,42,0.7)', lit = '#E8B84B';
-      const totalW = size + pad*2, totalH = size + pad*2;
-      function baseRect(px, py, on) {
-        const ox = px+pad, oy = py+pad;
-        return `<rect x="${ox-bs/2}" y="${oy-bs/2}" width="${bs}" height="${bs}"
-          fill="${on?lit:'transparent'}" stroke="${on?lit:dim}" stroke-width="2.5"
-          transform="rotate(45 ${ox} ${oy})" rx="1"/>`;
-      }
-      return `<svg width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">
-        ${baseRect(right.x,right.y,first)}${baseRect(top.x,top.y,second)}${baseRect(left.x,left.y,third)}
-      </svg>`;
-    }
-
-    // Trim 3-letter abbrs to 2 for score display (e.g. CHC→CH, LAD→LA)
-    const padresScoreAbbr = 'SD'; // Padres always SD (2 letters, no change)
-    const oppScoreAbbr    = oppAbbr.length >= 3 ? oppAbbr.slice(0, -1) : oppAbbr;
-
-    panel.innerHTML = `${corners}
-      <div class="gp-body">
-
-        <!-- LEFT: Padres -->
-        <div class="gp-left">
-          <div class="gp-lineup-name padres">${padresShortName}</div>
-          <ul class="gp-lineup">${lineupHTML(padresLineup, padresSide)}</ul>
-          <div class="gp-pitcher-footer">
-            <div class="gp-pitcher-name"><span class="pos-tag">P </span>${padresPitcherLast}</div>
-            ${padresPitchCount != null ? `<div class="gp-pitcher-stat">${padresPitchCount} pitches</div>` : ''}
-          </div>
-        </div>
-
-        <!-- MIDDLE: game state -->
-        <div class="gp-mid">
-          ${statusBlock}
-          <div class="gp-diamond">${diamondSVG(onFirst, onSecond, onThird)}</div>
-          <div class="gp-outs-col">
-            <div class="gp-outs-label">Outs</div>
-            <div class="outs-pips">
-              <div class="out-pip ${outs >= 1 ? 'on' : ''}"></div>
-              <div class="out-pip ${outs >= 2 ? 'on' : ''}"></div>
-              <div class="out-pip ${outs >= 3 ? 'on' : ''}"></div>
-            </div>
-          </div>
-          <div class="gp-center-score">
-            <span class="gp-center-team padres">${padresScoreAbbr}</span>
-            <span class="gp-center-runs">${padresRuns}</span>
-            <span class="gp-center-dash">–</span>
-            <span class="gp-center-runs">${oppRuns}</span>
-            <span class="gp-center-team opp">${oppScoreAbbr}</span>
-          </div>
-          ${inningBlock}
-        </div>
-
-        <!-- RIGHT: Opponent -->
-        <div class="gp-right">
-          <div class="gp-lineup-name opp">${oppShortName}</div>
-          <ul class="gp-lineup">${lineupHTML(oppLineup, oppSide)}</ul>
-          <div class="gp-pitcher-footer">
-            <div class="gp-pitcher-name">${oppPitcherLast}<span class="pos-tag"> P</span></div>
-            ${oppPitchCount != null ? `<div class="gp-pitcher-stat">${oppPitchCount} pitches</div>` : ''}
-          </div>
-        </div>
-
-      </div>`;
-    return true; // live game still in progress
-  }
-
-  // No live game — stop polling and find next scheduled game
-  stopGamePolling();
-  for (let offset = 0; offset <= 10; offset++) {
-    const dateStr   = getLocalDateStr(offset);
-    const sRes      = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${dateStr}&teamId=${PADRES_ID}&gameType=R`);
-    const sData     = await sRes.json();
-    const nextGames = sData.dates?.[0]?.games ?? [];
-    const next      = nextGames.find(g => g.status.abstractGameState === 'Preview' || g.status.detailedState === 'Scheduled');
-
-    if (next) {
-      const homeId   = next.teams.home.team.id;
-      const awayId   = next.teams.away.team.id;
-      const homeAbbr = next.teams.home.team.abbreviation || ID_TO_ABBR[homeId] || '???';
-      const awayAbbr = next.teams.away.team.abbreviation || ID_TO_ABBR[awayId] || '???';
-      const startUTC = new Date(next.gameDate);
-      const timeStr  = startUTC.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', timeZoneName:'short' });
-      const dateLbl  = startUTC.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
-
-      panel.innerHTML = `${corners}
-        <div class="gp-next">
-          <div class="gp-next-label">Next Game</div>
-          <div class="gp-next-teams">${awayAbbr} @ ${homeAbbr}</div>
-          <div class="gp-next-time">${timeStr}</div>
-          <div class="gp-next-date">${dateLbl}</div>
-        </div>`;
-      return false;
-    }
-  }
-
-  panel.innerHTML = `${corners}<div class="gp-next"><div class="gp-next-label">No upcoming games found</div></div>`;
-  return false;
-}
-
-/* ── Easter egg: type "wilmyers" anywhere to trigger ── */
-(function() {
+/* ── Easter egg: type "wilmyers" anywhere to trigger ──────────── */
+(() => {
   const SECRET = 'wilmyers';
+  const SECRET_LEN = SECRET.length;
   let buffer = '';
 
   document.addEventListener('keydown', e => {
-    if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
-    buffer += e.key.toLowerCase();
-    if (buffer.length > SECRET.length) buffer = buffer.slice(-SECRET.length);
-    if (buffer === SECRET) { buffer = ''; triggerWilmyers(); }
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    /* Single-char keys only — ignore Shift, Meta, ArrowLeft, etc. */
+    if (e.key.length !== 1) return;
+
+    buffer = (buffer + e.key.toLowerCase()).slice(-SECRET_LEN);
+    if (buffer === SECRET) {
+      buffer = '';
+      triggerWilmyers();
+    }
   });
 
   function triggerWilmyers() {
@@ -1137,20 +1340,11 @@ async function fetchPadresGame() {
 
     const overlay = document.createElement('div');
     overlay.id = 'wilmyers-overlay';
-    overlay.style.cssText = `
-      position:fixed; inset:0; z-index:9999;
-      background:#000; opacity:0;
-      transition:opacity 2s ease;
-      cursor:pointer;
-    `;
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;opacity:0;transition:opacity 2s ease;cursor:pointer';
 
     const video = document.createElement('video');
     video.src = '/data/wilmyers.mp4';
-    video.style.cssText = `
-      position:absolute; inset:0;
-      width:100%; height:100%;
-      object-fit:cover;
-    `;
+    video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
     video.volume = 0;
     video.autoplay = true;
     video.playsInline = true;
@@ -1158,7 +1352,7 @@ async function fetchPadresGame() {
     overlay.appendChild(video);
     document.body.appendChild(overlay);
 
-    // Fade overlay in + ramp audio up over 2s
+    /* Fade overlay in + ramp audio up over 2s */
     requestAnimationFrame(() => requestAnimationFrame(() => {
       overlay.style.opacity = '1';
       let step = 0;
@@ -1169,14 +1363,10 @@ async function fetchPadresGame() {
       }, interval);
     }));
 
-    video.addEventListener('ended', fadeOut);
-    overlay.addEventListener('click', fadeOut);
-
-    function fadeOut() {
+    const fadeOut = () => {
       video.removeEventListener('ended', fadeOut);
       overlay.removeEventListener('click', fadeOut);
 
-      // Ramp audio down over 2s
       let step = 0;
       const steps = 40, interval = 2000 / steps;
       const ramp = setInterval(() => {
@@ -1184,11 +1374,12 @@ async function fetchPadresGame() {
         if (step >= steps) clearInterval(ramp);
       }, interval);
 
-      // Fade overlay out over 2s then remove
-      overlay.style.transition = 'opacity 2s ease';
       overlay.style.opacity = '0';
       setTimeout(() => { video.pause(); overlay.remove(); }, 2000);
-    }
+    };
+
+    video.addEventListener('ended', fadeOut);
+    overlay.addEventListener('click', fadeOut);
   }
 })();
 </script>
