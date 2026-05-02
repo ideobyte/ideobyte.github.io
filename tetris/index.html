@@ -779,32 +779,65 @@ function spawnTetrisParticles(clearedRows) {
 }
 
 function updateParticles() {
-  for (let i = particles.length - 1; i >= 0; i--) {
+  // Compact in place with a write-pointer instead of splice() per dead particle.
+  let w = 0;
+  for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
     p.x  += p.vx;
     p.y  += p.vy;
     p.vy += p.gravity;
     p.vx *= 0.98; // slight air resistance
     p.alpha -= p.decay;
-    if (p.alpha <= 0) particles.splice(i, 1);
+    if (p.alpha > 0) {
+      if (w !== i) particles[w] = p;
+      w++;
+    }
   }
+  if (w !== particles.length) particles.length = w;
+}
+
+// Pre-rendered glow sprites — one bitmap per color. Each particle becomes a
+// single drawImage call. The original used ctx.shadowBlur per particle, which
+// hits a slow software path in Firefox and was the cause of the Tetris-clear lag.
+const _glowSpriteCache = new Map();
+function _getGlowSprite(color) {
+  let sprite = _glowSpriteCache.get(color);
+  if (sprite) return sprite;
+  const SPRITE_SIZE = 64;
+  const SPRITE_CORE = 16; // logical "size" the baked sprite represents
+  const c = document.createElement('canvas');
+  c.width = c.height = SPRITE_SIZE;
+  const sctx = c.getContext('2d');
+  const cx = SPRITE_SIZE / 2;
+  // Soft outer glow (replaces shadowBlur)
+  const grad = sctx.createRadialGradient(cx, cx, 0, cx, cx, SPRITE_SIZE / 2);
+  grad.addColorStop(0, color);
+  grad.addColorStop(0.25, color);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  sctx.fillStyle = grad;
+  sctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+  // Solid color core
+  sctx.fillStyle = color;
+  sctx.fillRect(cx - SPRITE_CORE / 2, cx - SPRITE_CORE / 2, SPRITE_CORE, SPRITE_CORE);
+  // Bright white inner core (the "second brighter core" from the original)
+  sctx.fillStyle = 'rgba(255,255,255,0.7)';
+  const inner = SPRITE_CORE * 0.45;
+  sctx.fillRect(cx - inner / 2, cx - inner / 2, inner, inner);
+  sprite = { canvas: c, size: SPRITE_SIZE, core: SPRITE_CORE };
+  _glowSpriteCache.set(color, sprite);
+  return sprite;
 }
 
 function drawParticles() {
-  particles.forEach(p => {
+  // One drawImage per particle. globalAlpha is the only state we touch.
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    const sprite = _getGlowSprite(p.color);
+    const drawSize = sprite.size * (p.size / sprite.core);
     ctx.globalAlpha = p.alpha;
-    ctx.fillStyle = p.color;
-    ctx.shadowColor = p.color;
-    ctx.shadowBlur = p.size * 3;
-    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
-    // second brighter core
-    ctx.fillStyle = '#ffffff';
-    ctx.globalAlpha = p.alpha * 0.5;
-    const core = p.size * 0.35;
-    ctx.fillRect(p.x - core / 2, p.y - core / 2, core, core);
-  });
+    ctx.drawImage(sprite.canvas, p.x - drawSize / 2, p.y - drawSize / 2, drawSize, drawSize);
+  }
   ctx.globalAlpha = 1;
-  ctx.shadowBlur = 0;
 }
 
 function place() {
@@ -927,21 +960,31 @@ function drawCell(c, x, y, ctx, alpha = 1) {
   ctx.globalAlpha = 1;
 }
 
+// Cached grid background — built lazily on first draw. Replaces the 22 separate
+// beginPath/stroke calls that the original ran every frame.
+let _gridCache = null;
+function _getGridCache() {
+  if (_gridCache) return _gridCache;
+  const c = document.createElement('canvas');
+  c.width = canvas.width;
+  c.height = canvas.height;
+  const g = c.getContext('2d');
+  g.fillStyle = '#010801';
+  g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = 'rgba(0,255,65,0.06)';
+  g.lineWidth = 0.5;
+  g.beginPath();
+  for (let x = 0; x <= COLS; x++) { g.moveTo(x * CELL, 0); g.lineTo(x * CELL, c.height); }
+  for (let y = 0; y <= ROWS; y++) { g.moveTo(0, y * CELL); g.lineTo(c.width, y * CELL); }
+  g.stroke();
+  _gridCache = c;
+  return c;
+}
+
 function draw() {
   if (!board) return;
-  // Background
-  ctx.fillStyle = '#010801';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Grid lines
-  ctx.strokeStyle = 'rgba(0,255,65,0.06)';
-  ctx.lineWidth = 0.5;
-  for (let x = 0; x <= COLS; x++) {
-    ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke();
-  }
-  for (let y = 0; y <= ROWS; y++) {
-    ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke();
-  }
+  // Background + grid in one blit (was 22 stroke() calls per frame)
+  ctx.drawImage(_getGridCache(), 0, 0);
 
   // Board
   board.forEach((row, y) => {
@@ -956,19 +999,19 @@ function draw() {
     });
   });
 
-  // Ghost piece
+  // Ghost piece — set alpha + style once outside the inner loop instead of per cell
   if (piece && gameRunning) {
     const gy = ghostY();
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = COLORS[piece.name];
     piece.shape.forEach((row, dy) =>
       row.forEach((cell, dx) => {
         if (cell) {
-          ctx.globalAlpha = 0.15;
-          ctx.fillStyle = COLORS[piece.name];
           ctx.fillRect((piece.x + dx) * CELL + 2, (gy + dy) * CELL + 2, CELL - 4, CELL - 4);
-          ctx.globalAlpha = 1;
         }
       })
     );
+    ctx.globalAlpha = 1;
   }
 
   // Active piece
