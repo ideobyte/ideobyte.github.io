@@ -713,12 +713,41 @@ const $ = {
 };
 
 /* ── Helpers ──────────────────────────────────────────────────── */
+function getPTOffset() {
+  /* Pacific Time: UTC-8 in winter (PST), UTC-7 in summer (PDT).
+     DST runs from 2nd Sunday in March to 1st Sunday in November.
+     Simple approximation: PDT if month is 3-10 (April-October always PDT,
+     March and November need exact Sunday check but close enough for date purposes). */
+  const now = new Date();
+  const month = now.getUTCMonth() + 1; // 1-12
+  // Full check: find 2nd Sunday in March and 1st Sunday in November
+  function nthSundayUTC(year, month, n) {
+    const d = new Date(Date.UTC(year, month - 1, 1));
+    let sundays = 0;
+    while (sundays < n) {
+      if (d.getUTCDay() === 0) sundays++;
+      if (sundays < n) d.setUTCDate(d.getUTCDate() + 1);
+    }
+    return d;
+  }
+  const year = now.getUTCFullYear();
+  const dstStart = nthSundayUTC(year, 3, 2);  // 2nd Sunday March, 2am PT = 10am UTC
+  const dstEnd   = nthSundayUTC(year, 11, 1); // 1st Sunday November, 2am PT = 9am UTC
+  dstStart.setUTCHours(10);
+  dstEnd.setUTCHours(9);
+  const isPDT = now >= dstStart && now < dstEnd;
+  return isPDT ? 7 : 8;
+}
+
 function getLocalDateStr(offset = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
+  const now    = new Date();
+  const ptMs   = now.getTime() - getPTOffset() * 3600000;
+  const ptDate = new Date(ptMs);
+  ptDate.setUTCDate(ptDate.getUTCDate() + offset);
+  const y = ptDate.getUTCFullYear();
+  const m = String(ptDate.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(ptDate.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function formatDisplayDate(s) {
@@ -924,6 +953,7 @@ function buildGameCell(g) {
     </div><div class="game-sub">Final</div>`;
   }
 
+  /* The schedule was already fetched with date=todayStr so any game here is today's. */
   return `<div class="game-time">${g.localTime}</div><div class="game-sub">${vsAt} ${oppAbbr}</div>`;
 }
 
