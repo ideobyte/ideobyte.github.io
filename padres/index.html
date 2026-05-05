@@ -1418,7 +1418,7 @@ async function renderNextGame() {
 
     const tvBroadcasts = [...new Set(
       (next.broadcasts ?? []).filter(b => b.type === 'TV').map(b => {
-        if (/padres\s*tv/i.test(b.name)) return 'Padres.TV';
+        if (/padres[.\s]*tv/i.test(b.name)) return 'Padres.TV';
         return b.name;
       })
     )];
