@@ -512,6 +512,10 @@
   .gp-next-pitchers { margin-top: 0.1rem; }
   .gp-next-pitcher-label { font-size: 0.38rem; letter-spacing: 0.2rem; color: var(--cream-muted); text-transform: uppercase; margin-bottom: 0.2rem; }
   .gp-next-pitcher-matchup { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 0.08rem; color: var(--cream); }
+  .gp-next-pitcher-stats { font-size: 0.38rem; color: var(--cream-muted); letter-spacing: 0.05rem; margin-top: 0.1rem; }
+  .gp-next-meta { font-size: 0.38rem; letter-spacing: 0.12rem; color: var(--cream-muted); margin-bottom: 0.25rem; }
+  .gp-next-series { font-size: 0.4rem; letter-spacing: 0.08rem; color: var(--cream-muted); margin-top: 0.35rem; }
+  .gp-next-broadcasts { font-size: 0.38rem; letter-spacing: 0.06rem; color: var(--cream-muted); margin-top: 0.12rem; }
   .gp-next-lineup-badge {
     display: inline-block;
     margin-top: 0.5rem;
@@ -1381,7 +1385,7 @@ async function renderLiveGame(liveGame) {
 async function renderNextGame() {
   for (let offset = 0; offset <= 10; offset++) {
     const dateStr = getLocalDateStr(offset);
-    const sData = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${dateStr}&teamId=${PADRES_ID}&gameType=R&hydrate=probablePitcher,lineups`);
+    const sData = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${dateStr}&teamId=${PADRES_ID}&gameType=R&hydrate=probablePitcher,lineups,broadcasts(all)`);
     const nextGames = sData.dates?.[0]?.games ?? [];
     const next = nextGames.find(g =>
          g.status.abstractGameState === 'Preview'
@@ -1398,29 +1402,98 @@ async function renderNextGame() {
     const timeStr = startUTC.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
     const dateLbl = startUTC.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-    const homeProbable = next.teams.home.probablePitcher?.fullName ?? null;
-    const awayProbable = next.teams.away.probablePitcher?.fullName ?? null;
+    const homeProbable    = next.teams.home.probablePitcher?.fullName ?? null;
+    const awayProbable    = next.teams.away.probablePitcher?.fullName ?? null;
+    const homeProbableId  = next.teams.home.probablePitcher?.id ?? null;
+    const awayProbableId  = next.teams.away.probablePitcher?.id ?? null;
 
-    const padresSide = homeId === PADRES_ID ? 'home' : 'away';
+    const padresSide    = homeId === PADRES_ID ? 'home' : 'away';
+    const oppId         = padresSide === 'home' ? awayId : homeId;
     const lineupPlayers = padresSide === 'home' ? next.lineups?.homePlayers : next.lineups?.awayPlayers;
-    const lineupPosted = Array.isArray(lineupPlayers) && lineupPlayers.length > 0;
+    const lineupPosted  = Array.isArray(lineupPlayers) && lineupPlayers.length > 0;
 
-    const pitcherBlock = (homeProbable || awayProbable) ? `
-      <div class="gp-next-divider"></div>
-      <div class="gp-next-pitchers">
-        <div class="gp-next-pitcher-label">Probable Starters</div>
-        <div class="gp-next-pitcher-matchup">${lastName(awayProbable) || 'TBD'} vs ${lastName(homeProbable) || 'TBD'}</div>
-      </div>` : '';
+    const seriesGame  = next.seriesGameNumber ?? null;
+    const seriesTotal = next.gamesInSeries ?? null;
+    const venueName   = next.venue?.name ?? null;
 
-    const lineupBadge = lineupPosted ? `<div class="gp-next-lineup-badge">✓ Lineup Posted</div>` : '';
+    const tvBroadcasts = [...new Set(
+      (next.broadcasts ?? []).filter(b => b.type === 'TV').map(b => b.name)
+    )];
+
+    /* Parallel: pitcher season stats + season series record */
+    const todayStr = getLocalDateStr(0);
+    const pitcherStatUrl = id =>
+      `${STATS_API}/people/${id}/stats?stats=season&group=pitching&season=${SEASON}&sportId=1`;
+    const [homeStatsData, awayStatsData, seriesSchedule] = await Promise.all([
+      homeProbableId ? fetchJSON(pitcherStatUrl(homeProbableId)).catch(() => null) : Promise.resolve(null),
+      awayProbableId ? fetchJSON(pitcherStatUrl(awayProbableId)).catch(() => null) : Promise.resolve(null),
+      fetchJSON(`${STATS_API}/schedule?sportId=1&startDate=${SEASON}-03-01&endDate=${todayStr}&teamId=${PADRES_ID}&gameType=R`).catch(() => null),
+    ]);
+
+    function pitcherStatStr(data) {
+      const stat = data?.stats?.[0]?.splits?.[0]?.stat;
+      if (!stat) return null;
+      const era = parseFloat(stat.era);
+      return `${stat.wins ?? 0}-${stat.losses ?? 0}, ${isFinite(era) ? era.toFixed(2) : '—'} ERA`;
+    }
+
+    const homeStatStr = pitcherStatStr(homeStatsData);
+    const awayStatStr = pitcherStatStr(awayStatsData);
+
+    let seriesW = 0, seriesL = 0;
+    if (seriesSchedule) {
+      const allGames = (seriesSchedule.dates ?? []).flatMap(d => d.games ?? []);
+      for (const g of allGames) {
+        const hId = g.teams.home.team.id, aId = g.teams.away.team.id;
+        if ((hId !== oppId && aId !== oppId) || g.status.abstractGameState !== 'Final') continue;
+        const padresIsHome = hId === PADRES_ID;
+        const padresRuns = padresIsHome ? (g.teams.home.score ?? 0) : (g.teams.away.score ?? 0);
+        const oppRuns    = padresIsHome ? (g.teams.away.score ?? 0) : (g.teams.home.score ?? 0);
+        if (padresRuns > oppRuns) seriesW++; else seriesL++;
+      }
+    }
+
+    /* ── Build HTML blocks ─────────────────────────────────────── */
+    const metaParts = [];
+    if (seriesGame && seriesTotal) metaParts.push(`Game ${seriesGame} of ${seriesTotal}`);
+    if (venueName) metaParts.push(venueName);
+    const metaLine = metaParts.length
+      ? `<div class="gp-next-meta">${metaParts.join(' · ')}</div>` : '';
+
+    const pitcherBlock = (homeProbable || awayProbable) ? (() => {
+      const awayName = lastName(awayProbable) || 'TBD';
+      const homeName = lastName(homeProbable) || 'TBD';
+      const statsLine = (awayStatStr || homeStatStr)
+        ? `<div class="gp-next-pitcher-stats">${awayStatStr || '—'} &nbsp;vs&nbsp; ${homeStatStr || '—'}</div>`
+        : '';
+      return `
+        <div class="gp-next-divider"></div>
+        <div class="gp-next-pitchers">
+          <div class="gp-next-pitcher-label">Probable Starters</div>
+          <div class="gp-next-pitcher-matchup">${awayName} vs ${homeName}</div>
+          ${statsLine}
+        </div>`;
+    })() : '';
+
+    const seriesStr = (seriesW > 0 || seriesL > 0)
+      ? `<div class="gp-next-series">Season series: SD ${seriesW}–${seriesL}</div>` : '';
+
+    const broadcastStr = tvBroadcasts.length
+      ? `<div class="gp-next-broadcasts">${tvBroadcasts.join(' · ')}</div>` : '';
+
+    const lineupBadge = lineupPosted
+      ? `<div class="gp-next-lineup-badge">✓ Lineup Posted</div>` : '';
 
     $.gamePanel.innerHTML = `${CORNERS_HTML}
       <div class="gp-next">
         <div class="gp-next-label">Next Game</div>
+        ${metaLine}
         <div class="gp-next-teams">${awayAbbr} @ ${homeAbbr}</div>
         <div class="gp-next-time">${timeStr}</div>
         <div class="gp-next-date">${dateLbl}</div>
         ${pitcherBlock}
+        ${seriesStr}
+        ${broadcastStr}
         ${lineupBadge}
       </div>`;
     return false;
@@ -1476,12 +1549,14 @@ function lockPanelHeights() {
   /* Reset before measuring so we measure natural content height */
   $.nlwestPanel.style.height = '';
   $.gamePanel.style.height = '';
-  const h = $.nlwestPanel.getBoundingClientRect().height;
+  const standH = $.nlwestPanel.getBoundingClientRect().height;
+  const gameH  = $.gamePanel.getBoundingClientRect().height;
+  const h = Math.max(standH, gameH);
   if (h > 0) {
-    $.nlwestPanel.style.height  = h + 'px';
+    $.nlwestPanel.style.height    = h + 'px';
     $.nlwestPanel.style.overflowY = 'auto';
-    $.gamePanel.style.height    = h + 'px';
-    $.gamePanel.style.overflowY = 'hidden';
+    $.gamePanel.style.height      = h + 'px';
+    $.gamePanel.style.overflowY   = 'auto';
   }
 }
 window.addEventListener('resize', () => {
