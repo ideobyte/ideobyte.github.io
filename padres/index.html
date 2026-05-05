@@ -1750,6 +1750,9 @@ async function closeTeamStats() {
 
   panel.classList.remove('stats-open');
 
+  // Start fetching the standings data immediately so it's ready in the background
+  const standingsPromise = fetchNLWest().catch(() => {});
+
   // Re-lock height immediately after innerHTML wiped it, with no transition
   panel.style.transition = 'none';
   panel.style.height     = currentH + 'px';
@@ -1767,15 +1770,17 @@ async function closeTeamStats() {
     if (table) table.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, fill: 'forwards' });
   }, 80);
 
+  // Wait for the slide animation to finish
   await new Promise(r => setTimeout(r, 470));
+
+  // Wait for the standings data to actually populate the DOM so the height doesn't collapse
+  await standingsPromise;
 
   // Release back to flex
   panel.style.transition = 'none';
   panel.style.height     = '';
   panel.style.overflow   = '';
   panel.style.flex       = '';
-
-  fetchNLWest().catch(() => {});
 }
 
 /* ── Easter egg: type "wilmyers" anywhere to trigger ──────────── */
