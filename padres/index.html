@@ -214,10 +214,22 @@
     border-radius: 6px;
     position: relative;
     z-index: 1;
-    overflow: hidden;
     animation: fadeUp 0.5s ease 0.25s both;
     margin-bottom: 1.6rem;
     flex: 1;
+    overflow: hidden;
+  }
+
+  /* When showing stats, panel has a fixed height set by JS */
+  .nlwest-panel.stats-open {
+    flex: none;
+    overflow: hidden;
+  }
+
+  .stats-table-wrap {
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: 0.4rem 0 0.2rem;
   }
 
   .standings-table { width: 100%; border-collapse: collapse; }
@@ -547,6 +559,109 @@
     .game-time      { font-size: 0.48rem; }
     .next-game-cell { min-width: unset; padding-right: 0.5rem; }
   }
+  /* ── Team Stats Panel ──────────────────────────────────────── */
+  .stats-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.8rem 0;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stats-back-btn {
+    background: none;
+    border: 1px solid rgba(200,146,42,0.4);
+    color: var(--gold-bright);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.38rem;
+    letter-spacing: 0.15rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .stats-back-btn:hover { background: rgba(200,146,42,0.1); border-color: var(--gold-bright); }
+
+  .stats-team-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.1rem;
+    color: var(--cream);
+    flex: 1;
+    text-align: center;
+  }
+  .stats-team-name.padres { color: var(--gold-bright); }
+
+  .stats-tabs {
+    display: flex;
+    gap: 0.2rem;
+  }
+
+  .stats-tab {
+    background: none;
+    border: 1px solid rgba(200,146,42,0.3);
+    color: var(--cream-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.38rem;
+    letter-spacing: 0.12rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 3px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .stats-tab:hover { border-color: var(--gold-bright); color: var(--cream); }
+  .stats-tab.active { background: rgba(200,146,42,0.15); border-color: var(--gold-bright); color: var(--gold-bright); }
+
+  .stats-table-wrap {
+    overflow-x: auto;
+    padding: 0.4rem 0 0.2rem;
+  }
+
+  .stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.52rem;
+  }
+
+  .stats-table thead tr { border-bottom: 1px solid var(--gold-line-strong); }
+  .stats-table th {
+    font-size: 0.46rem;
+    letter-spacing: 0.12rem;
+    color: var(--cream-muted);
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    text-align: right;
+    font-weight: 400;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  .stats-table th:first-child { text-align: left; }
+  .stats-table th:hover { color: var(--gold-bright); }
+  .stats-table th.sort-asc::after  { content: ' ▲'; font-size: 0.3rem; }
+  .stats-table th.sort-desc::after { content: ' ▼'; font-size: 0.3rem; }
+
+  .stats-table tbody tr { border-bottom: 1px solid rgba(200,146,42,0.08); transition: background 0.12s; }
+  .stats-table tbody tr:last-child { border-bottom: none; }
+  .stats-table tbody tr:hover { background: rgba(200,146,42,0.06); }
+
+  .stats-table td {
+    padding: 0.28rem 0.5rem;
+    text-align: right;
+    color: var(--cream);
+    white-space: nowrap;
+  }
+  .stats-table td:first-child { text-align: left; color: var(--cream); font-weight: 700; }
+  .stats-table .stat-pos { font-size: 0.32rem; color: rgba(200,146,42,0.55); margin-left: 0.2rem; }
+  .stats-table .stat-num { font-family: 'IBM Plex Mono', monospace; }
+  .stats-loading { text-align: center; padding: 1rem; color: var(--cream-muted); font-size: 0.44rem; }
+
+  .stats-table-wrap.fading { opacity: 0; }
+
 </style>
 </head>
 <body>
@@ -573,8 +688,8 @@
   </div>
 
   <div class="bottom-right">
-    <div class="bottom-label">NL West Standings</div>
-    <div class="nlwest-panel">
+    <div class="bottom-label" id="standingsLabel">NL West Standings</div>
+    <div class="nlwest-panel" id="nlwestPanel">
       <div class="corner tl"></div><div class="corner tr"></div>
       <div class="corner bl"></div><div class="corner br"></div>
       <table class="standings-table">
@@ -707,9 +822,9 @@ const $ = {
   headerDate:    document.getElementById('headerDate'),
   grid:          document.getElementById('grid'),
   matchupLine:   document.getElementById('matchupLine'),
-  standingsBody: document.getElementById('standingsBody'),
+  get standingsBody() { return document.getElementById('standingsBody'); },
   gamePanel:     document.getElementById('gamePanel'),
-  nlwestPanel:   document.querySelector('.nlwest-panel'),
+  get nlwestPanel()   { return document.getElementById('nlwestPanel'); },
 };
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -900,7 +1015,7 @@ async function fetchNLWest() {
 
     const gameCell = buildGameCell(todayGames[team.id]);
 
-    return `<tr class="${isPadres ? 'padres-row' : ''}">
+    return `<tr class="${isPadres ? 'padres-row' : ''}" style="cursor:pointer" onclick="openTeamStats(${team.id}, '${team.name}', ${isPadres})">
       <td>
         <div class="team-name-cell">
           <span class="team-abbr ${isPadres ? 'padres' : ''}">${team.abbr}</span>
@@ -1345,6 +1460,323 @@ async function init() {
 })();
 
 init();
+
+/* ── Team Stats Panel ──────────────────────────────────────────── */
+let _statsTeamId   = null;
+let _statsTab      = 'hitting'; // 'hitting' | 'pitching'
+let _statsData     = { hitting: null, pitching: null };
+let _statsSortCol  = null;
+let _statsSortDir  = 'desc';
+
+const HITTING_COLS = [
+  { key: 'name',       label: 'Player',  fmt: null,    sort: 'asc'  },
+  { key: 'gamesPlayed',label: 'G',       fmt: null                  },
+  { key: 'plateAppearances', label: 'PA', fmt: null                 },
+  { key: 'atBats',     label: 'AB',      fmt: null                  },
+  { key: 'hits',       label: 'H',       fmt: null                  },
+  { key: 'homeRuns',   label: 'HR',      fmt: null                  },
+  { key: 'rbi',        label: 'RBI',     fmt: null                  },
+  { key: 'stolenBases',label: 'SB',      fmt: null                  },
+  { key: 'avg',        label: 'AVG',     fmt: v => parseFloat(v).toFixed(3).replace(/^0/,'') },
+  { key: 'obp',        label: 'OBP',     fmt: v => parseFloat(v).toFixed(3).replace(/^0/,'') },
+  { key: 'slg',        label: 'SLG',     fmt: v => parseFloat(v).toFixed(3).replace(/^0/,'') },
+  { key: 'ops',        label: 'OPS',     fmt: v => parseFloat(v).toFixed(3).replace(/^0/,'') },
+  { key: 'strikeOuts', label: 'K',       fmt: null                  },
+];
+
+const PITCHING_COLS = [
+  { key: 'name',          label: 'Player',  fmt: null,   sort: 'asc'  },
+  { key: 'gamesPlayed',   label: 'G',       fmt: null                 },
+  { key: 'gamesStarted',  label: 'GS',      fmt: null                 },
+  { key: 'wins',          label: 'W',       fmt: null                 },
+  { key: 'losses',        label: 'L',       fmt: null                 },
+  { key: 'saves',         label: 'SV',      fmt: null                 },
+  { key: 'era',           label: 'ERA',     fmt: v => parseFloat(v).toFixed(2) },
+  { key: 'inningsPitched',label: 'IP',      fmt: null                 },
+  { key: 'strikeOuts',    label: 'K',       fmt: null                 },
+  { key: 'baseOnBalls',   label: 'BB',      fmt: null                 },
+  { key: 'hits',          label: 'H',       fmt: null                 },
+  { key: 'whip',          label: 'WHIP',    fmt: v => parseFloat(v).toFixed(2) },
+];
+
+/* Smoothly animate panel height between two values */
+function animatePanelHeight(panel, fromH, toH, done) {
+  // Use max-height instead of height — works on flex:1 children
+  panel.style.transition = 'none';
+  panel.style.maxHeight = fromH + 'px';
+  panel.style.overflow = 'hidden';
+  panel.getBoundingClientRect(); // force reflow
+  panel.style.transition = 'max-height 0.4s ease';
+  panel.style.maxHeight = toH + 'px';
+  function onEnd() {
+    panel.removeEventListener('transitionend', onEnd);
+    panel.style.maxHeight = '';
+    panel.style.overflow = '';
+    panel.style.transition = '';
+    if (done) done();
+  }
+  panel.addEventListener('transitionend', onEnd);
+}
+
+/* Fade element out, swap content, fade back in, then call afterFn with
+   the element so callers can measure scrollHeight after a paint. */
+function fadeSwap(el, buildFn, afterFn) {
+  el.style.transition = 'opacity 0.15s ease';
+  el.style.opacity = '0';
+  setTimeout(() => {
+    buildFn();
+    // Let the browser paint the new content before measuring
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.opacity = '1';
+        if (afterFn) afterFn(el);
+      });
+    });
+  }, 160);
+}
+
+/* ── Team stats ─────────────────────────────────────────────────
+   Strategy: measure the standings height once when first opening,
+   store it, then use JS to set an explicit pixel height so the
+   panel is truly fixed-size regardless of flex layout.
+   Transitions are done via element.animate() which always works. */
+
+let _standingsH = 0; // captured on first open
+
+function panelFade(panel, fromOpacity, toOpacity, ms) {
+  return panel.animate(
+    [{ opacity: fromOpacity }, { opacity: toOpacity }],
+    { duration: ms, fill: 'forwards', easing: 'ease' }
+  ).finished;
+}
+
+function panelSlide(panel, fromH, toH, ms) {
+  return new Promise(resolve => {
+    // Must override flex:1 or the browser ignores style.height
+    panel.style.flex       = 'none';
+    panel.style.transition = 'none';
+    panel.style.height     = fromH + 'px';
+    panel.style.overflow   = 'hidden';
+    panel.getBoundingClientRect(); // force reflow
+    panel.style.transition = `height ${ms}ms ease`;
+    panel.style.height     = toH + 'px';
+    function onEnd(e) {
+      if (e.propertyName !== 'height') return;
+      panel.removeEventListener('transitionend', onEnd);
+      panel.style.transition = '';
+      resolve();
+    }
+    panel.addEventListener('transitionend', onEnd);
+    setTimeout(resolve, ms + 100);
+  });
+}
+
+async function openTeamStats(teamId, teamName, isPadres) {
+  _statsTeamId  = teamId;
+  _statsTab     = 'hitting';
+  _statsData    = { hitting: null, pitching: null };
+  _statsSortCol = 'avg';
+  _statsSortDir = 'desc';
+
+  const shortName = teamName.split(' ').pop();
+  document.getElementById('standingsLabel').textContent = shortName + ' Stats';
+
+  const panel = document.getElementById('nlwestPanel');
+
+  // Capture standings height before anything changes
+  _standingsH = panel.getBoundingClientRect().height;
+  const targetH = Math.round(_standingsH * 2);
+
+  // Pin height so the slide animation has a starting point
+  panel.style.height   = _standingsH + 'px';
+  panel.style.overflow = 'hidden';
+
+  // Fade out just the inner content
+  const inner = panel.querySelector('table, .stats-header, .gp-next');
+  if (inner) await inner.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }).finished;
+
+  // Swap content while invisible
+  panel.innerHTML = `
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="stats-header" style="opacity:0">
+      <button class="stats-back-btn" onclick="closeTeamStats()">← Standings</button>
+      <div class="stats-team-name ${isPadres ? 'padres' : ''}">${teamName}</div>
+      <div class="stats-tabs">
+        <button class="stats-tab active" id="tabHitting"  onclick="switchStatsTab('hitting')">Hitting</button>
+        <button class="stats-tab"        id="tabPitching" onclick="switchStatsTab('pitching')">Pitching</button>
+      </div>
+    </div>
+    <div class="stats-table-wrap" id="statsTableWrap" style="opacity:0;height:${targetH - 70}px">
+      <div class="stats-loading">Loading stats...</div>
+    </div>`;
+
+  panel.classList.add('stats-open');
+
+  // Slide panel height AND fade in content simultaneously
+  await Promise.all([
+    panelSlide(panel, _standingsH, targetH, 420),
+    (async () => {
+      await new Promise(r => setTimeout(r, 80)); // slight delay so slide starts first
+      const header = panel.querySelector('.stats-header');
+      const wrap   = panel.querySelector('.stats-table-wrap');
+      if (header) header.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, fill: 'forwards' });
+      if (wrap)   wrap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, fill: 'forwards' });
+    })(),
+  ]);
+
+  panel.style.height = targetH + 'px';
+  panel.style.flex   = 'none'; // keep flex:none so height stays fixed during stats view
+
+  await loadStatsTab(teamId, 'hitting');
+}
+
+async function loadStatsTab(teamId, tab) {
+  if (_statsData[tab]) {
+    renderStatsTable(tab);
+    return;
+  }
+
+  const group = tab === 'hitting' ? 'hitting' : 'pitching';
+  const url   = `${STATS_API}/stats?stats=season&group=${group}&season=${SEASON}&sportId=1&gameType=R&teamId=${teamId}&playerPool=ALL&limit=100`;
+  const data  = await fetchJSON(url);
+  const rawSplits = data.stats?.[0]?.splits ?? [];
+
+  _statsData[tab] = rawSplits
+    .filter(s => s.player?.fullName)
+    .map(s => ({ name: s.player.fullName, pos: s.position?.abbreviation ?? '', ...s.stat }));
+
+  renderStatsTable(tab);
+}
+
+function renderStatsTable(tab) {
+  const cols = tab === 'hitting' ? HITTING_COLS : PITCHING_COLS;
+  let rows   = [...(_statsData[tab] ?? [])];
+
+  if (tab === 'hitting') {
+    rows = rows.filter(r => (parseInt(r.plateAppearances) || 0) >= 10);
+  } else {
+    rows = rows.filter(r => (parseFloat(r.inningsPitched) || 0) >= 10);
+  }
+
+  const sortKey = _statsSortCol ?? (tab === 'hitting' ? 'avg' : 'era');
+  rows.sort((a, b) => {
+    const av = a[sortKey], bv = b[sortKey];
+    if (sortKey === 'name') return _statsSortDir === 'asc'
+      ? String(av).localeCompare(String(bv))
+      : String(bv).localeCompare(String(av));
+    const an = parseFloat(av) || 0, bn = parseFloat(bv) || 0;
+    return _statsSortDir === 'asc' ? an - bn : bn - an;
+  });
+
+  const thead = cols.map(c => {
+    const cls = c.key === sortKey ? ` sort-${_statsSortDir}` : '';
+    return `<th class="${cls}" onclick="sortStats('${c.key}')">${c.label}</th>`;
+  }).join('');
+
+  const tbody = rows.length
+    ? rows.map(r => '<tr>' + cols.map(c => {
+        if (c.key === 'name') return `<td>${r.name}<span class="stat-pos">${r.pos}</span></td>`;
+        const raw = r[c.key] ?? '—';
+        return `<td class="stat-num">${raw !== '—' && c.fmt ? c.fmt(raw) : raw}</td>`;
+      }).join('') + '</tr>').join('')
+    : `<tr><td colspan="${cols.length}" class="stats-loading">No qualifying players</td></tr>`;
+
+  const wrap = document.getElementById('statsTableWrap');
+  if (!wrap) return;
+
+  wrap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'forwards' }).finished.then(() => {
+    wrap.innerHTML = `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
+    wrap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'forwards' });
+  });
+}
+
+function sortStats(key) {
+  if (_statsSortCol === key) {
+    _statsSortDir = _statsSortDir === 'desc' ? 'asc' : 'desc';
+  } else {
+    _statsSortCol = key;
+    _statsSortDir = (key === 'name' || key === 'era' || key === 'whip') ? 'asc' : 'desc';
+  }
+  renderStatsTable(_statsTab);
+}
+
+async function switchStatsTab(tab) {
+  if (tab === _statsTab) return;
+  _statsTab     = tab;
+  _statsSortCol = tab === 'hitting' ? 'avg' : 'era';
+  _statsSortDir = tab === 'hitting' ? 'desc' : 'asc';
+  document.getElementById('tabHitting').classList.toggle('active',  tab === 'hitting');
+  document.getElementById('tabPitching').classList.toggle('active', tab === 'pitching');
+  await loadStatsTab(_statsTeamId, tab);
+}
+
+async function closeTeamStats() {
+  _statsTeamId = null;
+  _statsData   = { hitting: null, pitching: null };
+  document.getElementById('standingsLabel').textContent = 'NL West Standings';
+
+  const panel    = document.getElementById('nlwestPanel');
+  const currentH = parseFloat(panel.style.height) || panel.getBoundingClientRect().height;
+  const toH      = _standingsH || Math.round(currentH / 2);
+
+  // Fade out content
+  const header = panel.querySelector('.stats-header');
+  const wrap   = panel.querySelector('.stats-table-wrap');
+  const fadeOuts = [];
+  if (header) fadeOuts.push(header.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }).finished);
+  if (wrap)   fadeOuts.push(wrap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }).finished);
+  await Promise.all(fadeOuts);
+
+  // Swap HTML — this wipes all inline styles including height
+  panel.innerHTML = `
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <table class="standings-table" style="opacity:0">
+      <thead>
+        <tr>
+          <th class="team-th" style="width:35%">Team</th>
+          <th class="num">W</th><th class="num">L</th>
+          <th class="num">PCT</th>
+          <th class="num hide-mobile">GB</th>
+          <th class="num">L10</th>
+          <th class="next-game-cell next-game-th">Today's Game</th>
+        </tr>
+      </thead>
+      <tbody id="standingsBody">
+        <tr><td colspan="7" class="cell-loading">Loading standings...</td></tr>
+      </tbody>
+    </table>`;
+
+  panel.classList.remove('stats-open');
+
+  // Re-lock height immediately after innerHTML wiped it, with no transition
+  panel.style.transition = 'none';
+  panel.style.height     = currentH + 'px';
+  panel.style.overflow   = 'hidden';
+  panel.style.flex       = 'none';
+  panel.getBoundingClientRect(); // force reflow to commit
+
+  // Now animate to standings height
+  panel.style.transition = 'height 420ms ease';
+  panel.style.height     = toH + 'px';
+
+  // Fade table in while sliding
+  setTimeout(() => {
+    const table = panel.querySelector('table');
+    if (table) table.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, fill: 'forwards' });
+  }, 80);
+
+  await new Promise(r => setTimeout(r, 470));
+
+  // Release back to flex
+  panel.style.transition = 'none';
+  panel.style.height     = '';
+  panel.style.overflow   = '';
+  panel.style.flex       = '';
+
+  fetchNLWest().catch(() => {});
+}
 
 /* ── Easter egg: type "wilmyers" anywhere to trigger ──────────── */
 (() => {
