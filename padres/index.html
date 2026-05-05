@@ -191,6 +191,7 @@
     position: relative;
     z-index: 1;
   }
+  .matchup-line .matchup-live { color: var(--gold-bright); }
 
   .promo-heading {
     font-family: 'Bebas Neue', sans-serif;
@@ -226,12 +227,6 @@
     overflow: hidden;
   }
 
-  .stats-table-wrap {
-    overflow-y: auto;
-    overflow-x: auto;
-    padding: 0.4rem 0 0.2rem;
-  }
-
   .standings-table { width: 100%; border-collapse: collapse; }
   .standings-table thead tr { border-bottom: 1px solid var(--gold-line-strong); }
   .standings-table th {
@@ -249,6 +244,7 @@
   .standings-table tbody tr {
     border-bottom: 1px solid var(--gold-line-ghost);
     transition: background-color 0.15s;
+    cursor: pointer;
   }
   .standings-table tbody tr:last-child { border-bottom: none; }
   .standings-table tbody tr:hover { background: rgba(200,146,42,0.05); }
@@ -534,12 +530,6 @@
     .gp-left, .gp-right { display: none !important; }
     .gp-mid { flex: 1 !important; padding: 0.6rem !important; }
   }
-  body.is-phone .bottom-row { flex-direction: column; }
-  body.is-phone .bottom-left,
-  body.is-phone .bottom-right { width: 100%; }
-  body.is-phone .gp-left,
-  body.is-phone .gp-right { display: none !important; }
-  body.is-phone .gp-mid { flex: 1 !important; padding: 0.6rem !important; }
 
   @media (max-width: 600px) {
     .team-full { display: none; }
@@ -617,6 +607,7 @@
   .stats-tab.active { background: rgba(200,146,42,0.15); border-color: var(--gold-bright); color: var(--gold-bright); }
 
   .stats-table-wrap {
+    overflow-y: auto;
     overflow-x: auto;
     padding: 0.4rem 0 0.2rem;
   }
@@ -806,8 +797,7 @@ const NL_WEST = [
 ];
 const NL_WEST_IDS = new Set(NL_WEST.map(t => t.id));
 
-/* Master ID → abbreviation map. Note: original had a duplicate 137 key
-   (SF appeared twice); removed. */
+/* Master ID → abbreviation map for non-NL-West teams (NL West come from NL_WEST). */
 const ID_TO_ABBR = {
   108: 'LAA', 109: 'AZ',  110: 'BAL', 111: 'BOS', 112: 'CHC',
   113: 'CIN', 114: 'CLE', 115: 'COL', 116: 'DET', 117: 'HOU',
@@ -817,11 +807,31 @@ const ID_TO_ABBR = {
   144: 'ATL', 145: 'CWS', 146: 'MIA', 158: 'MIL',
 };
 
-/* Pre-built static HTML fragment used many times — stop rebuilding it */
+/* Reusable corner decoration markup (4 corners on every panel/card). */
 const CORNERS_HTML = '<div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const NAME_SUFFIXES = new Set(['jr.', 'sr.', 'ii', 'iii', 'iv', 'v']);
+
+/* Standings table markup (used both as initial render and when restoring
+   after the stats panel closes). */
+const STANDINGS_TABLE_HTML = `
+  <table class="standings-table">
+    <thead>
+      <tr>
+        <th class="team-th" style="width:35%">Team</th>
+        <th class="num">W</th>
+        <th class="num">L</th>
+        <th class="num">PCT</th>
+        <th class="num hide-mobile">GB</th>
+        <th class="num">L10</th>
+        <th class="next-game-cell next-game-th">Today's Game</th>
+      </tr>
+    </thead>
+    <tbody id="standingsBody">
+      <tr><td colspan="7" class="cell-loading">Loading standings...</td></tr>
+    </tbody>
+  </table>`;
 
 /* ── Promo definitions ────────────────────────────────────────── */
 const PROMOS = [
@@ -884,8 +894,6 @@ const PROMOS = [
 ];
 
 /* ── DOM cache ────────────────────────────────────────────────── */
-/* Reading the DOM once is cheap; reading it 50 times across the file
-   is just lazy. */
 const $ = {
   headerDate:    document.getElementById('headerDate'),
   grid:          document.getElementById('grid'),
@@ -897,13 +905,9 @@ const $ = {
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 function getPTOffset() {
-  /* Pacific Time: UTC-8 in winter (PST), UTC-7 in summer (PDT).
-     DST runs from 2nd Sunday in March to 1st Sunday in November.
-     Simple approximation: PDT if month is 3-10 (April-October always PDT,
-     March and November need exact Sunday check but close enough for date purposes). */
+  /* Pacific Time offset from UTC in hours (8 = PST, 7 = PDT).
+     DST: 2nd Sunday of March 02:00 PT → 1st Sunday of November 02:00 PT. */
   const now = new Date();
-  const month = now.getUTCMonth() + 1; // 1-12
-  // Full check: find 2nd Sunday in March and 1st Sunday in November
   function nthSundayUTC(year, month, n) {
     const d = new Date(Date.UTC(year, month - 1, 1));
     let sundays = 0;
@@ -914,8 +918,8 @@ function getPTOffset() {
     return d;
   }
   const year = now.getUTCFullYear();
-  const dstStart = nthSundayUTC(year, 3, 2);  // 2nd Sunday March, 2am PT = 10am UTC
-  const dstEnd   = nthSundayUTC(year, 11, 1); // 1st Sunday November, 2am PT = 9am UTC
+  const dstStart = nthSundayUTC(year, 3, 2);  // 2nd Sun March, 02:00 PT = 10:00 UTC
+  const dstEnd   = nthSundayUTC(year, 11, 1); // 1st Sun November, 02:00 PT = 09:00 UTC
   dstStart.setUTCHours(10);
   dstEnd.setUTCHours(9);
   const isPDT = now >= dstStart && now < dstEnd;
@@ -938,8 +942,7 @@ function formatDisplayDate(s) {
   return `${MONTHS[parseInt(m, 10) - 1]} ${parseInt(day, 10)}, ${y}`;
 }
 
-/* Returns last name, respecting Jr./Sr./II/III/IV suffixes.
-   Was duplicated three times in the original. */
+/* Returns last name, respecting Jr./Sr./II/III/IV suffixes. */
 function lastName(fullName) {
   if (!fullName) return '—';
   const parts = fullName.split(' ');
@@ -1024,8 +1027,8 @@ async function fetchNLWest() {
     }
   }
 
-  /* Enrich ID_TO_ABBR + build today-game map keyed by NL West team ID
-     in a single pass over the schedule. The original walked the schedule twice. */
+  /* Build today-game map keyed by NL West team ID, and enrich the abbr
+     map for any team appearing on the schedule, in one pass. */
   const todayGames = {};
   for (const dateObj of schedData.dates || []) {
     for (const g of dateObj.games || []) {
@@ -1064,7 +1067,6 @@ async function fetchNLWest() {
   });
   const leaderRec = wlMap[sorted[0].id] ?? { w: 0, l: 0 };
 
-  /* Build rows with .map().join('') instead of `+=` accumulation */
   const html = sorted.map((team, idx) => {
     const rec = wlMap[team.id] ?? { w: 0, l: 0 };
     const isPadres = team.id === PADRES_ID;
@@ -1083,7 +1085,7 @@ async function fetchNLWest() {
 
     const gameCell = buildGameCell(todayGames[team.id]);
 
-    return `<tr class="${isPadres ? 'padres-row' : ''}" style="cursor:pointer" onclick="openTeamStats(${team.id}, '${team.name}', ${isPadres})">
+    return `<tr class="${isPadres ? 'padres-row' : ''}" onclick="openTeamStats(${team.id}, '${team.name}', ${isPadres})">
       <td>
         <div class="team-name-cell">
           <span class="team-abbr ${isPadres ? 'padres' : ''}">${team.abbr}</span>
@@ -1167,26 +1169,21 @@ function getLineup(side, feed, box) {
   );
 }
 
-function getActivePitcher(feedTeam) {
-  const pitchers = feedTeam?.pitchers ?? [];
-  const players  = feedTeam?.players ?? {};
-  for (let i = pitchers.length - 1; i >= 0; i--) {
-    const p = players[`ID${pitchers[i]}`];
-    if (p?.stats?.pitching) return p.person?.fullName ?? '—';
-  }
-  return '—';
-}
-
-function getPitchCount(feedTeam) {
+/* Find the most recent pitcher with stats and return name + pitch count. */
+function getActivePitcherInfo(feedTeam) {
   const pitchers = feedTeam?.pitchers ?? [];
   const players  = feedTeam?.players ?? {};
   for (let i = pitchers.length - 1; i >= 0; i--) {
     const p = players[`ID${pitchers[i]}`];
     if (p?.stats?.pitching) {
-      return p.stats.pitching.pitchesThrown ?? p.stats.pitching.numberOfPitches ?? null;
+      const s = p.stats.pitching;
+      return {
+        name:  p.person?.fullName ?? '—',
+        count: s.pitchesThrown ?? s.numberOfPitches ?? null,
+      };
     }
   }
-  return null;
+  return { name: '—', count: null };
 }
 
 function diamondSVG(first, second, third) {
@@ -1274,10 +1271,12 @@ async function renderLiveGame(liveGame) {
   const padresFeedTeam = padresSide === 'home' ? feedHome : feedAway;
   const oppFeedTeam    = padresSide === 'home' ? feedAway : feedHome;
 
-  const padresPitcherLast = lastName(getActivePitcher(padresFeedTeam));
-  const oppPitcherLast    = lastName(getActivePitcher(oppFeedTeam));
-  const padresPitchCount  = getPitchCount(padresFeedTeam);
-  const oppPitchCount     = getPitchCount(oppFeedTeam);
+  const padresPitcher = getActivePitcherInfo(padresFeedTeam);
+  const oppPitcher    = getActivePitcherInfo(oppFeedTeam);
+  const padresPitcherLast = lastName(padresPitcher.name);
+  const oppPitcherLast    = lastName(oppPitcher.name);
+  const padresPitchCount  = padresPitcher.count;
+  const oppPitchCount     = oppPitcher.count;
 
   const lineupHTML = (lineup, side) => {
     const isBatting = halfIsTop ? side === oppSide : side === padresSide;
@@ -1428,8 +1427,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ── Panel height locking ─────────────────────────────────────── */
-/* Keep the two top panels equal height. Original ran this once and
-   left fixed pixel heights forever; this re-runs on resize (debounced). */
+/* Match game-panel height to standings-panel height (re-runs on resize). */
 let _resizeTimer = null;
 function lockPanelHeights() {
   if (!$.nlwestPanel || !$.gamePanel) return;
@@ -1491,14 +1489,12 @@ async function renderPromos() {
   });
 
   $.matchupLine.innerHTML = isLive
-    ? `<span style="color:var(--gold-bright)">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayR} — ${homeR} ${homeLabel}`
+    ? `<span class="matchup-live">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayR} — ${homeR} ${homeLabel}`
     : `${awayLabel} ${awayR} — ${homeR} ${homeLabel}`;
 }
 
 async function init() {
-  /* Kick off the three independent fetches in parallel. The original
-     ran the promo fetch sequentially, *then* started standings + game
-     panel — so the dashboard waited on the slowest path twice over. */
+  /* All three fetches in parallel — no need to gate one on another. */
   const promosTask = renderPromos().catch(() => {
     $.grid.innerHTML = PROMOS.map(p => cardHTML(p, { status: 'nogame' })).join('');
   });
@@ -1518,14 +1514,6 @@ async function init() {
      when a live game is detected) */
   startStandingsPolling();
 }
-
-/* ── Phone detection ──────────────────────────────────────────── */
-(() => {
-  const ua = navigator.userAgent || '';
-  const isPhone = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
-    || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
-  if (isPhone) document.body.classList.add('is-phone');
-})();
 
 init();
 
@@ -1593,55 +1581,12 @@ const LAST_GAME_PITCHING_COLS = [
   { key: 'pitchesThrown', label: 'P'      },
   { key: 'strikes',       label: 'S'      },
 ];
-function animatePanelHeight(panel, fromH, toH, done) {
-  // Use max-height instead of height — works on flex:1 children
-  panel.style.transition = 'none';
-  panel.style.maxHeight = fromH + 'px';
-  panel.style.overflow = 'hidden';
-  panel.getBoundingClientRect(); // force reflow
-  panel.style.transition = 'max-height 0.4s ease';
-  panel.style.maxHeight = toH + 'px';
-  function onEnd() {
-    panel.removeEventListener('transitionend', onEnd);
-    panel.style.maxHeight = '';
-    panel.style.overflow = '';
-    panel.style.transition = '';
-    if (done) done();
-  }
-  panel.addEventListener('transitionend', onEnd);
-}
-
-/* Fade element out, swap content, fade back in, then call afterFn with
-   the element so callers can measure scrollHeight after a paint. */
-function fadeSwap(el, buildFn, afterFn) {
-  el.style.transition = 'opacity 0.15s ease';
-  el.style.opacity = '0';
-  setTimeout(() => {
-    buildFn();
-    // Let the browser paint the new content before measuring
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.style.opacity = '1';
-        if (afterFn) afterFn(el);
-      });
-    });
-  }, 160);
-}
-
 /* ── Team stats ─────────────────────────────────────────────────
-   Strategy: measure the standings height once when first opening,
-   store it, then use JS to set an explicit pixel height so the
-   panel is truly fixed-size regardless of flex layout.
-   Transitions are done via element.animate() which always works. */
+   Strategy: capture the standings-panel height on first open, then
+   pin the panel to a fixed pixel height during the stats view so
+   the slide animation has stable from/to values. */
 
 let _standingsH = 0; // captured on first open
-
-function panelFade(panel, fromOpacity, toOpacity, ms) {
-  return panel.animate(
-    [{ opacity: fromOpacity }, { opacity: toOpacity }],
-    { duration: ms, fill: 'forwards', easing: 'ease' }
-  ).finished;
-}
 
 function panelSlide(panel, fromH, toH, ms) {
   return new Promise(resolve => {
@@ -1835,24 +1780,9 @@ async function closeTeamStats() {
   await Promise.all(fadeOuts);
 
   // Swap HTML — this wipes all inline styles including height
-  panel.innerHTML = `
-    <div class="corner tl"></div><div class="corner tr"></div>
-    <div class="corner bl"></div><div class="corner br"></div>
-    <table class="standings-table" style="opacity:0">
-      <thead>
-        <tr>
-          <th class="team-th" style="width:35%">Team</th>
-          <th class="num">W</th><th class="num">L</th>
-          <th class="num">PCT</th>
-          <th class="num hide-mobile">GB</th>
-          <th class="num">L10</th>
-          <th class="next-game-cell next-game-th">Today's Game</th>
-        </tr>
-      </thead>
-      <tbody id="standingsBody">
-        <tr><td colspan="7" class="cell-loading">Loading standings...</td></tr>
-      </tbody>
-    </table>`;
+  panel.innerHTML = CORNERS_HTML + STANDINGS_TABLE_HTML;
+  const restoredTable = panel.querySelector('table');
+  if (restoredTable) restoredTable.style.opacity = '0';
 
   panel.classList.remove('stats-open');
 
@@ -1959,44 +1889,33 @@ async function fetchLastGameStats(teamId) {
 
 let _lgSelectedSide = 'away'; // 'away' | 'home'
 
+function lgStatTable(players, cols, emptyColspan) {
+  const thead = cols.map(c => `<th>${c.label}</th>`).join('');
+  const rows = players.map(r =>
+    '<tr>' + cols.map(c =>
+      c.key === 'name'
+        ? `<td>${r.name}</td>`
+        : `<td class="stat-num">${r[c.key] ?? 0}</td>`
+    ).join('') + '</tr>'
+  ).join('');
+  const body = rows || `<tr><td colspan="${emptyColspan}" class="stats-loading">No data</td></tr>`;
+  return `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function lgTeamContentHTML(team) {
+  return `
+    <div class="lg-team-name">${team.name}</div>
+    <div class="lg-section-label">Batting</div>
+    ${lgStatTable(team.hitters, LAST_GAME_HITTING_COLS, LAST_GAME_HITTING_COLS.length)}
+    <div class="lg-section-label">Pitching</div>
+    ${lgStatTable(team.pitchers, LAST_GAME_PITCHING_COLS, LAST_GAME_PITCHING_COLS.length)}`;
+}
+
 function renderLastGame() {
   const data = _statsData.lastgame;
   const wrap = document.getElementById('statsTableWrap');
   if (!wrap || !data) return;
 
-  function hitterTable(players) {
-    const rows = players.map(r =>
-      '<tr>' + LAST_GAME_HITTING_COLS.map(c => {
-        if (c.key === 'name') return `<td>${r.name}</td>`;
-        return `<td class="stat-num">${r[c.key] ?? 0}</td>`;
-      }).join('') + '</tr>'
-    ).join('');
-    const thead = LAST_GAME_HITTING_COLS.map(c => `<th>${c.label}</th>`).join('');
-    return `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${rows || '<tr><td colspan="11" class="stats-loading">No data</td></tr>'}</tbody></table>`;
-  }
-
-  function pitcherTable(players) {
-    const rows = players.map(r =>
-      '<tr>' + LAST_GAME_PITCHING_COLS.map(c => {
-        if (c.key === 'name') return `<td>${r.name}</td>`;
-        return `<td class="stat-num">${r[c.key] ?? 0}</td>`;
-      }).join('') + '</tr>'
-    ).join('');
-    const thead = LAST_GAME_PITCHING_COLS.map(c => `<th>${c.label}</th>`).join('');
-    return `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${rows || '<tr><td colspan="9" class="stats-loading">No data</td></tr>'}</tbody></table>`;
-  }
-
-  function buildTeamContent(side) {
-    const team = data[side];
-    return `
-      <div class="lg-team-name">${team.name}</div>
-      <div class="lg-section-label">Batting</div>
-      ${hitterTable(team.hitters)}
-      <div class="lg-section-label">Pitching</div>
-      ${pitcherTable(team.pitchers)}`;
-  }
-
-  // Full render (first time)
   wrap.innerHTML = `
     <div class="lg-score">${data.score}</div>
     <div class="lg-team-picker">
@@ -2005,7 +1924,7 @@ function renderLastGame() {
       <button class="lg-team-btn ${_lgSelectedSide === 'home' ? 'active' : ''}"
         onclick="selectLgSide('home')">${data.home.abbr}</button>
     </div>
-    <div id="lgTeamContent">${buildTeamContent(_lgSelectedSide)}</div>`;
+    <div id="lgTeamContent">${lgTeamContentHTML(data[_lgSelectedSide])}</div>`;
 
   wrap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'forwards' });
 }
@@ -2017,46 +1936,15 @@ function selectLgSide(side) {
   const data = _statsData.lastgame;
   if (!data) return;
 
-  // Update button states without fading them
   document.querySelectorAll('.lg-team-btn').forEach(btn => {
     btn.classList.toggle('active', btn.textContent.trim() === data[side].abbr);
   });
 
-  // Only fade the team content area
   const content = document.getElementById('lgTeamContent');
   if (!content) return;
 
   content.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'forwards' }).finished.then(() => {
-    const team = data[side];
-
-    function hitterTable(players) {
-      const rows = players.map(r =>
-        '<tr>' + LAST_GAME_HITTING_COLS.map(c => {
-          if (c.key === 'name') return `<td>${r.name}</td>`;
-          return `<td class="stat-num">${r[c.key] ?? 0}</td>`;
-        }).join('') + '</tr>'
-      ).join('');
-      const thead = LAST_GAME_HITTING_COLS.map(c => `<th>${c.label}</th>`).join('');
-      return `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${rows || '<tr><td colspan="11" class="stats-loading">No data</td></tr>'}</tbody></table>`;
-    }
-
-    function pitcherTable(players) {
-      const rows = players.map(r =>
-        '<tr>' + LAST_GAME_PITCHING_COLS.map(c => {
-          if (c.key === 'name') return `<td>${r.name}</td>`;
-          return `<td class="stat-num">${r[c.key] ?? 0}</td>`;
-        }).join('') + '</tr>'
-      ).join('');
-      const thead = LAST_GAME_PITCHING_COLS.map(c => `<th>${c.label}</th>`).join('');
-      return `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${rows || '<tr><td colspan="9" class="stats-loading">No data</td></tr>'}</tbody></table>`;
-    }
-
-    content.innerHTML = `
-      <div class="lg-team-name">${team.name}</div>
-      <div class="lg-section-label">Batting</div>
-      ${hitterTable(team.hitters)}
-      <div class="lg-section-label">Pitching</div>
-      ${pitcherTable(team.pitchers)}`;
+    content.innerHTML = lgTeamContentHTML(data[side]);
     content.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'forwards' });
   });
 }
