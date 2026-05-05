@@ -508,6 +508,23 @@
   .gp-next-teams { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.1rem; color: var(--cream); margin-bottom: 0.25rem; }
   .gp-next-time  { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; color: var(--gold-bright); letter-spacing: 0.08rem; }
   .gp-next-date  { font-size: 0.42rem; color: var(--cream-muted); letter-spacing: 0.1rem; margin-top: 0.2rem; }
+  .gp-next-divider { width: 60%; height: 1px; background: var(--gold-line-soft); margin: 0.6rem auto; }
+  .gp-next-pitchers { margin-top: 0.1rem; }
+  .gp-next-pitcher-label { font-size: 0.38rem; letter-spacing: 0.2rem; color: var(--cream-muted); text-transform: uppercase; margin-bottom: 0.2rem; }
+  .gp-next-pitcher-matchup { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 0.08rem; color: var(--cream); }
+  .gp-next-lineup-badge {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.36rem;
+    letter-spacing: 0.18rem;
+    text-transform: uppercase;
+    color: var(--yes);
+    border: 1px solid rgba(126,182,72,0.4);
+    padding: 0.12rem 0.45rem;
+    border-radius: 3px;
+  }
+  .streak-w { color: var(--yes); }
+  .streak-l { color: var(--no); }
   .gp-loading {
     font-size: 0.44rem;
     letter-spacing: 0.2rem;
@@ -760,11 +777,12 @@
             <th class="num">PCT</th>
             <th class="num hide-mobile">GB</th>
             <th class="num">L10</th>
+            <th class="num hide-mobile">STK</th>
             <th class="next-game-cell next-game-th">Today's Game</th>
           </tr>
         </thead>
         <tbody id="standingsBody">
-          <tr><td colspan="7" class="cell-loading">Loading standings...</td></tr>
+          <tr><td colspan="8" class="cell-loading">Loading standings...</td></tr>
         </tbody>
       </table>
     </div>
@@ -825,11 +843,12 @@ const STANDINGS_TABLE_HTML = `
         <th class="num">PCT</th>
         <th class="num hide-mobile">GB</th>
         <th class="num">L10</th>
+        <th class="num hide-mobile">STK</th>
         <th class="next-game-cell next-game-th">Today's Game</th>
       </tr>
     </thead>
     <tbody id="standingsBody">
-      <tr><td colspan="7" class="cell-loading">Loading standings...</td></tr>
+      <tr><td colspan="8" class="cell-loading">Loading standings...</td></tr>
     </tbody>
   </table>`;
 
@@ -1023,6 +1042,7 @@ async function fetchNLWest() {
         l: tr.losses,
         l10w: l10?.wins ?? '-',
         l10l: l10?.losses ?? '-',
+        streak: tr.streak?.streakCode ?? '',
       };
     }
   }
@@ -1085,6 +1105,9 @@ async function fetchNLWest() {
 
     const gameCell = buildGameCell(todayGames[team.id]);
 
+    const streakCode = rec.streak ?? '';
+    const streakClass = streakCode.startsWith('W') ? 'streak-w' : streakCode.startsWith('L') ? 'streak-l' : '';
+
     return `<tr class="${isPadres ? 'padres-row' : ''}" onclick="openTeamStats(${team.id}, '${team.name}', ${isPadres})">
       <td>
         <div class="team-name-cell">
@@ -1097,6 +1120,7 @@ async function fetchNLWest() {
       <td class="num"><div class="pct">${pct}</div></td>
       <td class="num hide-mobile"><div class="gb">${gb}</div></td>
       <td class="num"><div class="record">${rec.l10w}-${rec.l10l}</div></td>
+      <td class="num hide-mobile"><div class="record ${streakClass}">${streakCode || '—'}</div></td>
       <td class="next-game-cell">${gameCell}</td>
     </tr>`;
   }).join('');
@@ -1357,7 +1381,7 @@ async function renderLiveGame(liveGame) {
 async function renderNextGame() {
   for (let offset = 0; offset <= 10; offset++) {
     const dateStr = getLocalDateStr(offset);
-    const sData = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${dateStr}&teamId=${PADRES_ID}&gameType=R`);
+    const sData = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${dateStr}&teamId=${PADRES_ID}&gameType=R&hydrate=probablePitcher,lineups`);
     const nextGames = sData.dates?.[0]?.games ?? [];
     const next = nextGames.find(g =>
          g.status.abstractGameState === 'Preview'
@@ -1374,12 +1398,30 @@ async function renderNextGame() {
     const timeStr = startUTC.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
     const dateLbl = startUTC.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
+    const homeProbable = next.teams.home.probablePitcher?.fullName ?? null;
+    const awayProbable = next.teams.away.probablePitcher?.fullName ?? null;
+
+    const padresSide = homeId === PADRES_ID ? 'home' : 'away';
+    const lineupPlayers = padresSide === 'home' ? next.lineups?.homePlayers : next.lineups?.awayPlayers;
+    const lineupPosted = Array.isArray(lineupPlayers) && lineupPlayers.length > 0;
+
+    const pitcherBlock = (homeProbable || awayProbable) ? `
+      <div class="gp-next-divider"></div>
+      <div class="gp-next-pitchers">
+        <div class="gp-next-pitcher-label">Probable Starters</div>
+        <div class="gp-next-pitcher-matchup">${lastName(awayProbable) || 'TBD'} vs ${lastName(homeProbable) || 'TBD'}</div>
+      </div>` : '';
+
+    const lineupBadge = lineupPosted ? `<div class="gp-next-lineup-badge">✓ Lineup Posted</div>` : '';
+
     $.gamePanel.innerHTML = `${CORNERS_HTML}
       <div class="gp-next">
         <div class="gp-next-label">Next Game</div>
         <div class="gp-next-teams">${awayAbbr} @ ${homeAbbr}</div>
         <div class="gp-next-time">${timeStr}</div>
         <div class="gp-next-date">${dateLbl}</div>
+        ${pitcherBlock}
+        ${lineupBadge}
       </div>`;
     return false;
   }
@@ -1499,7 +1541,7 @@ async function init() {
     $.grid.innerHTML = PROMOS.map(p => cardHTML(p, { status: 'nogame' })).join('');
   });
   const standingsTask = fetchNLWest().catch(err => {
-    $.standingsBody.innerHTML = `<tr><td colspan="7" class="cell-error">Error loading standings: ${err.message}</td></tr>`;
+    $.standingsBody.innerHTML = `<tr><td colspan="8" class="cell-error">Error loading standings: ${err.message}</td></tr>`;
   });
   const gameTask = fetchPadresGame().catch(err => {
     $.gamePanel.innerHTML = `${CORNERS_HTML}<div class="panel-error">Error: ${err.message}</div>`;
