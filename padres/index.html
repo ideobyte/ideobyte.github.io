@@ -650,7 +650,7 @@
   .stats-table tbody tr:hover { background: rgba(200,146,42,0.06); }
 
   .stats-table td {
-    padding: 0.28rem 0.5rem;
+    padding: 0.18rem 0.5rem;
     text-align: right;
     color: var(--cream);
     white-space: nowrap;
@@ -661,6 +661,74 @@
   .stats-loading { text-align: center; padding: 1rem; color: var(--cream-muted); font-size: 0.44rem; }
 
   .stats-table-wrap.fading { opacity: 0; }
+
+  /* ── Last Game tables — same font as season stats, tighter horizontal padding ── */
+  #lgTeamContent .stats-table {
+    table-layout: fixed;
+    width: 100%;
+  }
+  #lgTeamContent .stats-table th {
+    padding: 0.25rem 0.04rem;
+  }
+  #lgTeamContent .stats-table td {
+    padding: 0.18rem 0.04rem;
+  }
+  #lgTeamContent .stats-table th:first-child,
+  #lgTeamContent .stats-table td:first-child {
+    width: 28%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #lgTeamContent .stats-table th:not(:first-child),
+  #lgTeamContent .stats-table td:not(:first-child) {
+    width: 6.5%;
+  }
+
+  /* ── Last Game layout ───────────────────────────────────────── */
+  .lg-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    color: var(--gold-bright);
+    letter-spacing: 0.1rem;
+    text-align: center;
+    padding: 0.4rem 0 0.35rem;
+  }
+  .lg-team-picker {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+  .lg-team-btn {
+    background: none;
+    border: 1px solid rgba(200,146,42,0.35);
+    color: var(--cream-muted);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.12rem;
+    padding: 0.18rem 0.7rem;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .lg-team-btn:hover { border-color: var(--gold-bright); color: var(--cream); }
+  .lg-team-btn.active { background: rgba(200,146,42,0.15); border-color: var(--gold-bright); color: var(--gold-bright); }
+  .lg-team-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.12rem;
+    color: var(--cream);
+    padding: 0 0.8rem;
+    margin-bottom: 0.2rem;
+  }
+  .lg-section-label {
+    font-size: 0.32rem;
+    letter-spacing: 0.18rem;
+    color: var(--cream-muted);
+    text-transform: uppercase;
+    margin: 0.35rem 0.8rem 0.15rem;
+  }
 
 </style>
 </head>
@@ -1499,7 +1567,32 @@ const PITCHING_COLS = [
   { key: 'whip',          label: 'WHIP',    fmt: v => parseFloat(v).toFixed(2) },
 ];
 
-/* Smoothly animate panel height between two values */
+/* ── Last Game stat column definitions ─────────────────────────── */
+const LAST_GAME_HITTING_COLS = [
+  { key: 'name',        label: 'Player' },
+  { key: 'atBats',      label: 'AB'     },
+  { key: 'runs',        label: 'R'      },
+  { key: 'hits',        label: 'H'      },
+  { key: 'doubles',     label: '2B'     },
+  { key: 'triples',     label: '3B'     },
+  { key: 'homeRuns',    label: 'HR'     },
+  { key: 'rbi',         label: 'RBI'    },
+  { key: 'baseOnBalls', label: 'BB'     },
+  { key: 'strikeOuts',  label: 'K'      },
+  { key: 'stolenBases', label: 'SB'     },
+];
+
+const LAST_GAME_PITCHING_COLS = [
+  { key: 'name',          label: 'Player' },
+  { key: 'inningsPitched',label: 'IP'     },
+  { key: 'hits',          label: 'H'      },
+  { key: 'runs',          label: 'R'      },
+  { key: 'earnedRuns',    label: 'ER'     },
+  { key: 'baseOnBalls',   label: 'BB'     },
+  { key: 'strikeOuts',    label: 'K'      },
+  { key: 'pitchesThrown', label: 'P'      },
+  { key: 'strikes',       label: 'S'      },
+];
 function animatePanelHeight(panel, fromH, toH, done) {
   // Use max-height instead of height — works on flex:1 children
   panel.style.transition = 'none';
@@ -1603,6 +1696,7 @@ async function openTeamStats(teamId, teamName, isPadres) {
       <button class="stats-back-btn" onclick="closeTeamStats()">← Standings</button>
       <div class="stats-team-name ${isPadres ? 'padres' : ''}">${teamName}</div>
       <div class="stats-tabs">
+        <button class="stats-tab" id="tabLastGame" onclick="switchStatsTab('lastgame')">Last Game</button>
         <button class="stats-tab active" id="tabHitting"  onclick="switchStatsTab('hitting')">Hitting</button>
         <button class="stats-tab"        id="tabPitching" onclick="switchStatsTab('pitching')">Pitching</button>
       </div>
@@ -1632,6 +1726,17 @@ async function openTeamStats(teamId, teamName, isPadres) {
 }
 
 async function loadStatsTab(teamId, tab) {
+  if (tab === 'lastgame') {
+    if (_statsData.lastgame) {
+      renderLastGame();
+      return;
+    }
+    const wrap = document.getElementById('statsTableWrap');
+    if (wrap) { wrap.style.opacity = '0'; wrap.innerHTML = '<div class="stats-loading">Loading last game...</div>'; wrap.style.opacity = '1'; }
+    await fetchLastGameStats(teamId);
+    return;
+  }
+
   if (_statsData[tab]) {
     renderStatsTable(tab);
     return;
@@ -1704,10 +1809,11 @@ function sortStats(key) {
 async function switchStatsTab(tab) {
   if (tab === _statsTab) return;
   _statsTab     = tab;
-  _statsSortCol = tab === 'hitting' ? 'avg' : 'era';
-  _statsSortDir = tab === 'hitting' ? 'desc' : 'asc';
-  document.getElementById('tabHitting').classList.toggle('active',  tab === 'hitting');
-  document.getElementById('tabPitching').classList.toggle('active', tab === 'pitching');
+  _statsSortCol = tab === 'hitting' ? 'avg' : tab === 'pitching' ? 'era' : null;
+  _statsSortDir = tab === 'pitching' ? 'asc' : 'desc';
+  document.getElementById('tabLastGame')?.classList.toggle('active', tab === 'lastgame');
+  document.getElementById('tabHitting')?.classList.toggle('active',  tab === 'hitting');
+  document.getElementById('tabPitching')?.classList.toggle('active', tab === 'pitching');
   await loadStatsTab(_statsTeamId, tab);
 }
 
@@ -1781,6 +1887,178 @@ async function closeTeamStats() {
   panel.style.height     = '';
   panel.style.overflow   = '';
   panel.style.flex       = '';
+}
+
+/* ── Last Game stats ─────────────────────────────────────────────
+   Finds the most recent completed game for the selected team,
+   fetches the full boxscore, and renders hitting + pitching for both teams. */
+
+async function fetchLastGameStats(teamId) {
+  // Search back up to 10 days for most recent Final game
+  let gamePk = null, homeTeamName = '', awayTeamName = '', homeId = 0;
+
+  for (let offset = 0; offset >= -10 && !gamePk; offset--) {
+    const dateStr = getLocalDateStr(offset);
+    const sData   = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${dateStr}&teamId=${teamId}&gameType=R`);
+    const game    = sData.dates?.[0]?.games?.find(g => g.status.abstractGameState === 'Final');
+    if (game) {
+      gamePk       = game.gamePk;
+      homeTeamName = game.teams.home.team.name;
+      awayTeamName = game.teams.away.team.name;
+      homeId       = game.teams.home.team.id;
+    }
+  }
+
+  if (!gamePk) {
+    const wrap = document.getElementById('statsTableWrap');
+    if (wrap) wrap.innerHTML = '<div class="stats-loading">No recent games found</div>';
+    return;
+  }
+
+  const box    = await fetchJSON(`${STATS_API}/game/${gamePk}/boxscore`);
+  const homeAbbr = box.teams.home.team.abbreviation ?? box.teams.home.team.name.split(' ').pop();
+  const awayAbbr = box.teams.away.team.abbreviation ?? box.teams.away.team.name.split(' ').pop();
+  const homeR  = box.teams.home.teamStats?.batting?.runs ?? 0;
+  const awayR  = box.teams.away.teamStats?.batting?.runs ?? 0;
+
+  function extractPlayers(side) {
+    const players  = box.teams[side].players ?? {};
+    const batters  = box.teams[side].battingOrder ?? Object.keys(players);
+    const pitchers = box.teams[side].pitchers ?? [];
+    return { players, batters, pitchers };
+  }
+
+  function buildHitters(side) {
+    const { players, batters } = extractPlayers(side);
+    return batters.map(pid => {
+      const p  = players[`ID${pid}`] ?? {};
+      const s  = p.stats?.batting ?? {};
+      const pos = p.position?.abbreviation ?? '';
+      return { name: p.person?.fullName ?? '—', pos, ...s };
+    }).filter(r => r.atBats > 0 || r.walks > 0 || r.hitByPitch > 0);
+  }
+
+  function buildPitchers(side) {
+    const { players, pitchers } = extractPlayers(side);
+    return pitchers.map(pid => {
+      const p = players[`ID${pid}`] ?? {};
+      const s = p.stats?.pitching ?? {};
+      return { name: p.person?.fullName ?? '—', pos: 'P', ...s };
+    }).filter(r => r.inningsPitched && parseFloat(r.inningsPitched) > 0);
+  }
+
+  _statsData.lastgame = {
+    gamePk,
+    score:   `${awayAbbr} ${awayR} – ${homeR} ${homeAbbr}`,
+    home:    { abbr: homeAbbr, name: homeTeamName, hitters: buildHitters('home'), pitchers: buildPitchers('home') },
+    away:    { abbr: awayAbbr, name: awayTeamName, hitters: buildHitters('away'), pitchers: buildPitchers('away') },
+  };
+
+  renderLastGame();
+}
+
+let _lgSelectedSide = 'away'; // 'away' | 'home'
+
+function renderLastGame() {
+  const data = _statsData.lastgame;
+  const wrap = document.getElementById('statsTableWrap');
+  if (!wrap || !data) return;
+
+  function hitterTable(players) {
+    const rows = players.map(r =>
+      '<tr>' + LAST_GAME_HITTING_COLS.map(c => {
+        if (c.key === 'name') return `<td>${r.name}</td>`;
+        return `<td class="stat-num">${r[c.key] ?? 0}</td>`;
+      }).join('') + '</tr>'
+    ).join('');
+    const thead = LAST_GAME_HITTING_COLS.map(c => `<th>${c.label}</th>`).join('');
+    return `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${rows || '<tr><td colspan="11" class="stats-loading">No data</td></tr>'}</tbody></table>`;
+  }
+
+  function pitcherTable(players) {
+    const rows = players.map(r =>
+      '<tr>' + LAST_GAME_PITCHING_COLS.map(c => {
+        if (c.key === 'name') return `<td>${r.name}</td>`;
+        return `<td class="stat-num">${r[c.key] ?? 0}</td>`;
+      }).join('') + '</tr>'
+    ).join('');
+    const thead = LAST_GAME_PITCHING_COLS.map(c => `<th>${c.label}</th>`).join('');
+    return `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${rows || '<tr><td colspan="9" class="stats-loading">No data</td></tr>'}</tbody></table>`;
+  }
+
+  function buildTeamContent(side) {
+    const team = data[side];
+    return `
+      <div class="lg-team-name">${team.name}</div>
+      <div class="lg-section-label">Batting</div>
+      ${hitterTable(team.hitters)}
+      <div class="lg-section-label">Pitching</div>
+      ${pitcherTable(team.pitchers)}`;
+  }
+
+  // Full render (first time)
+  wrap.innerHTML = `
+    <div class="lg-score">${data.score}</div>
+    <div class="lg-team-picker">
+      <button class="lg-team-btn ${_lgSelectedSide === 'away' ? 'active' : ''}"
+        onclick="selectLgSide('away')">${data.away.abbr}</button>
+      <button class="lg-team-btn ${_lgSelectedSide === 'home' ? 'active' : ''}"
+        onclick="selectLgSide('home')">${data.home.abbr}</button>
+    </div>
+    <div id="lgTeamContent">${buildTeamContent(_lgSelectedSide)}</div>`;
+
+  wrap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'forwards' });
+}
+
+function selectLgSide(side) {
+  if (side === _lgSelectedSide) return;
+  _lgSelectedSide = side;
+
+  const data = _statsData.lastgame;
+  if (!data) return;
+
+  // Update button states without fading them
+  document.querySelectorAll('.lg-team-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim() === data[side].abbr);
+  });
+
+  // Only fade the team content area
+  const content = document.getElementById('lgTeamContent');
+  if (!content) return;
+
+  content.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'forwards' }).finished.then(() => {
+    const team = data[side];
+
+    function hitterTable(players) {
+      const rows = players.map(r =>
+        '<tr>' + LAST_GAME_HITTING_COLS.map(c => {
+          if (c.key === 'name') return `<td>${r.name}</td>`;
+          return `<td class="stat-num">${r[c.key] ?? 0}</td>`;
+        }).join('') + '</tr>'
+      ).join('');
+      const thead = LAST_GAME_HITTING_COLS.map(c => `<th>${c.label}</th>`).join('');
+      return `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${rows || '<tr><td colspan="11" class="stats-loading">No data</td></tr>'}</tbody></table>`;
+    }
+
+    function pitcherTable(players) {
+      const rows = players.map(r =>
+        '<tr>' + LAST_GAME_PITCHING_COLS.map(c => {
+          if (c.key === 'name') return `<td>${r.name}</td>`;
+          return `<td class="stat-num">${r[c.key] ?? 0}</td>`;
+        }).join('') + '</tr>'
+      ).join('');
+      const thead = LAST_GAME_PITCHING_COLS.map(c => `<th>${c.label}</th>`).join('');
+      return `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${rows || '<tr><td colspan="9" class="stats-loading">No data</td></tr>'}</tbody></table>`;
+    }
+
+    content.innerHTML = `
+      <div class="lg-team-name">${team.name}</div>
+      <div class="lg-section-label">Batting</div>
+      ${hitterTable(team.hitters)}
+      <div class="lg-section-label">Pitching</div>
+      ${pitcherTable(team.pitchers)}`;
+    content.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'forwards' });
+  });
 }
 
 /* ── Easter egg: type "wilmyers" anywhere to trigger ──────────── */
