@@ -512,10 +512,10 @@
   .gp-next-pitchers { margin-top: 0.1rem; }
   .gp-next-pitcher-label { font-size: 0.38rem; letter-spacing: 0.2rem; color: var(--cream-muted); text-transform: uppercase; margin-bottom: 0.2rem; }
   .gp-next-pitcher-matchup { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 0.08rem; color: var(--cream); }
-  .gp-next-pitcher-stats { font-size: 0.38rem; color: var(--cream-muted); letter-spacing: 0.05rem; margin-top: 0.1rem; }
-  .gp-next-meta { font-size: 0.38rem; letter-spacing: 0.12rem; color: var(--cream-muted); margin-bottom: 0.25rem; }
-  .gp-next-series { font-size: 0.4rem; letter-spacing: 0.08rem; color: var(--cream-muted); margin-top: 0.35rem; }
-  .gp-next-broadcasts { font-size: 0.38rem; letter-spacing: 0.06rem; color: var(--cream-muted); margin-top: 0.12rem; }
+  .gp-next-pitcher-stats { font-size: 0.52rem; color: var(--cream-muted); letter-spacing: 0.05rem; margin-top: 0.1rem; }
+  .gp-next-meta { font-size: 0.5rem; letter-spacing: 0.1rem; color: var(--cream-muted); margin-bottom: 0.25rem; }
+  .gp-next-series { font-size: 0.52rem; letter-spacing: 0.06rem; color: var(--cream-muted); margin-top: 0.35rem; }
+  .gp-next-broadcasts { font-size: 0.52rem; letter-spacing: 0.05rem; color: var(--cream-muted); margin-top: 0.12rem; }
   .gp-next-lineup-badge {
     display: inline-block;
     margin-top: 0.5rem;
@@ -1417,7 +1417,10 @@ async function renderNextGame() {
     const venueName   = next.venue?.name ?? null;
 
     const tvBroadcasts = [...new Set(
-      (next.broadcasts ?? []).filter(b => b.type === 'TV').map(b => b.name)
+      (next.broadcasts ?? []).filter(b => b.type === 'TV').map(b => {
+        if (/padres\s*tv/i.test(b.name)) return 'Padres.TV';
+        return b.name;
+      })
     )];
 
     /* Parallel: pitcher season stats + season series record */
