@@ -483,10 +483,10 @@
   .gp-half-arrow-sm    { font-size: 0.55rem; color: var(--gold-bright); line-height: 1; }
   .gp-inning-big       { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--cream); line-height: 1; letter-spacing: 0.05rem; }
   .gp-count-big        { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; color: var(--gold-bright); line-height: 1.2; letter-spacing: 0.05rem; }
-  .gp-last-pitch       { font-size: 0.5rem; color: rgba(200,146,42,0.65); text-align: center; letter-spacing: 0.03rem; margin-top: 0.15rem; max-width: 9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+  .gp-last-pitch       { font-size: 0.5rem; color: var(--gold-pale); text-align: center; letter-spacing: 0.03rem; margin-top: 0.15rem; max-width: 9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
   .gp-thread-link      { margin-top: 0.25rem; }
-  .gp-thread-link a    { font-size: 0.45rem; color: rgba(200,146,42,0.45); text-decoration: none; letter-spacing: 0.03rem; }
-  .gp-thread-link a:hover { color: var(--gold-bright); }
+  .gp-thread-link a    { font-size: 0.45rem; color: var(--gold-bright); text-decoration: none; letter-spacing: 0.03rem; }
+  .gp-thread-link a:hover { color: var(--cream); }
 
   .gp-pitcher-footer { padding-top: 0; border-top: 1px solid var(--gold-line-soft); }
   .gp-pitcher-name {
@@ -1324,6 +1324,7 @@ async function renderLiveGame(liveGame) {
       if (d === 'ball' || d === 'intent ball' || d.includes('ball in dirt') || d.includes('pitchout'))
         return `takes ball ${count?.balls ?? ''}`.trim();
       if (d === 'called strike') return `takes strike ${count?.strikes ?? ''}`.trim();
+      if (d.includes('in play'))         return 'Ball in play';
       if (d.includes('swinging strike') || d === 'missed bunt') return `swings and misses for strike ${count?.strikes ?? ''}`.trim();
       if (d.includes('foul tip'))  return `fouls it off for strike ${count?.strikes ?? ''}`.trim();
       if (d.includes('foul bunt')) return `fouls off the bunt for strike ${count?.strikes ?? ''}`.trim();
@@ -1381,6 +1382,7 @@ async function renderLiveGame(liveGame) {
     const pitchDesc = lastPitch?.details?.description ?? '';
     if (!pitchDesc) return '';
     const phrase = pitchPhrase(pitchDesc, play.count);
+    if (phrase === 'Ball in play') return phrase;
     return batterLast ? `${batterLast} ${phrase}` : phrase;
   })();
   if (lastPitchDesc) _lastPitchDescCache = lastPitchDesc;
