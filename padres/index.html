@@ -1059,6 +1059,7 @@ async function fetchNLWest() {
      map for any team appearing on the schedule, in one pass. */
   const todayGames = {};
   for (const dateObj of schedData.dates || []) {
+    if (dateObj.date !== todayStr) continue;
     for (const g of dateObj.games || []) {
       const homeId = g.teams?.home?.team?.id;
       const awayId = g.teams?.away?.team?.id;
