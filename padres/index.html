@@ -1306,7 +1306,7 @@ async function renderLiveGame(liveGame) {
   const oppPitchCount     = oppPitcher.count;
 
   const lineupHTML = (lineup, side) => {
-    const isBatting = halfIsTop ? side === oppSide : side === padresSide;
+    const isBatting = halfIsTop ? side === 'away' : side === 'home';
     const isRight   = side === oppSide;
     return lineup.map(p => {
       const isCurrent = isBatting && p.last === currentBatterLast && !isWarmup;
