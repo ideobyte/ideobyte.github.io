@@ -1368,10 +1368,12 @@ async function renderLiveGame(liveGame) {
         .map(r => lastName(r.details?.runner?.fullName ?? ''))
         .filter(Boolean);
 
-      const label  = [batterLast, eventPhrase(event)].filter(Boolean).join(' ');
+      const inningEnded = recordsOut && outs === 0;
+      const label  = [batterLast, eventPhrase(event)].filter(Boolean).join(' ')
+                   + (inningEnded ? ' to end the inning' : '');
       const extras = [];
       if (scorers.length) extras.push(scorers.map(s => `${s} scores`).join(', '));
-      if (recordsOut) extras.push(outs > 0 ? `${outs} out${outs !== 1 ? 's' : ''}` : 'inning over');
+      if (recordsOut && !inningEnded) extras.push(`${outs} out${outs !== 1 ? 's' : ''}`);
       return label + (extras.length ? ' · ' + extras.join(' · ') : '');
     }
 
