@@ -1369,7 +1369,7 @@ async function renderLiveGame(liveGame) {
         .map(r => lastName(r.details?.runner?.fullName ?? ''))
         .filter(Boolean);
 
-      const inningEnded = recordsOut && outs === 0;
+      const inningEnded = recordsOut && (outs === 0 || outs === 3);
       const label  = [batterLast, eventPhrase(event)].filter(Boolean).join(' ')
                    + (inningEnded ? ' to end the inning' : '');
       const extras = [];
