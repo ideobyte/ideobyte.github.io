@@ -953,15 +953,10 @@ function getPTOffset() {
   return isPDT ? 7 : 8;
 }
 
+const _ptDateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' });
+
 function getLocalDateStr(offset = 0) {
-  const now    = new Date();
-  const ptMs   = now.getTime() - getPTOffset() * 3600000;
-  const ptDate = new Date(ptMs);
-  ptDate.setUTCDate(ptDate.getUTCDate() + offset);
-  const y = ptDate.getUTCFullYear();
-  const m = String(ptDate.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(ptDate.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return _ptDateFmt.format(new Date(Date.now() + offset * 86_400_000));
 }
 
 function formatDisplayDate(s) {
@@ -1071,6 +1066,29 @@ async function fetchNLWest() {
       if (!NL_WEST_IDS.has(homeId) && !NL_WEST_IDS.has(awayId)) continue;
 
       const startUTC = new Date(g.gameDate);
+
+      /* Verify the game actually falls on today in PT. */
+      if (_ptDateFmt.format(startUTC) !== todayStr) continue;
+
+      /* Postponed/cancelled/suspended games: include in todayGames with a
+         special state so buildGameCell can render PPD + reschedule date. */
+      const detail = (g.status?.detailedState ?? '').toLowerCase();
+      if (detail.includes('postponed') || detail.includes('cancelled') || detail.includes('suspended')) {
+        const reschedRaw = g.rescheduleGameDate ?? null;
+        let reschedLabel = null;
+        if (reschedRaw) {
+          const [, mm, dd] = reschedRaw.split('-');
+          reschedLabel = `${MONTHS[parseInt(mm, 10) - 1]} ${parseInt(dd, 10)}`;
+        }
+        const ppd = { state: 'Postponed', reschedLabel, homeId, awayId,
+          homeAbbr: hAbbr || ID_TO_ABBR[homeId] || '???',
+          awayAbbr: aAbbr || ID_TO_ABBR[awayId] || '???',
+          homeRuns: 0, awayRuns: 0, inning: null, half: null, localTime: '', detailedState: '' };
+        if (NL_WEST_IDS.has(homeId)) todayGames[homeId] = ppd;
+        if (NL_WEST_IDS.has(awayId)) todayGames[awayId] = ppd;
+        continue;
+      }
+
       const info = {
         state:         g.status?.abstractGameState,
         detailedState: g.status?.detailedState ?? '',
@@ -1140,6 +1158,11 @@ async function fetchNLWest() {
 function buildGameCell(g, teamId) {
   if (!g) return '<div class="no-game">Off day</div>';
 
+  if (g.state === 'Postponed') {
+    const sub = g.reschedLabel ? `→ ${g.reschedLabel}` : '';
+    return `<div class="game-time" style="color:var(--cream-muted)">Postponed</div>${sub ? `<div class="game-sub">${sub}</div>` : ''}`;
+  }
+
   const isHome  = g.homeId === teamId;
   const myAbbr  = isHome ? g.homeAbbr : g.awayAbbr;
   const oppAbbr = isHome ? g.awayAbbr : g.homeAbbr;
@@ -1161,7 +1184,7 @@ function buildGameCell(g, teamId) {
     return `<div class="game-live"><span class="live-dot"></span><span class="game-scoreline">${scoreStr}</span></div><div class="game-sub">${inningStr}</div>`;
   }
 
-  if (g.state === 'Final' && g.detailedState.toLowerCase().includes('final')) {
+  if (g.state === 'Final' || g.detailedState.toLowerCase().includes('final') || g.detailedState.toLowerCase().includes('completed')) {
     const won = myRuns > oppRuns;
     const myCls  = won ? 'score-team-won'  : 'score-team-lost';
     const oppCls = won ? 'score-team-lost' : 'score-team-won';
