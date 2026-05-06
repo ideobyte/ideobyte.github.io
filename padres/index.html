@@ -484,6 +484,9 @@
   .gp-inning-big       { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--cream); line-height: 1; letter-spacing: 0.05rem; }
   .gp-count-big        { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; color: var(--gold-bright); line-height: 1.2; letter-spacing: 0.05rem; }
   .gp-last-pitch       { font-size: 0.5rem; color: rgba(200,146,42,0.65); text-align: center; letter-spacing: 0.03rem; margin-top: 0.15rem; max-width: 9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+  .gp-thread-link      { margin-top: 0.25rem; }
+  .gp-thread-link a    { font-size: 0.45rem; color: rgba(200,146,42,0.45); text-decoration: none; letter-spacing: 0.03rem; }
+  .gp-thread-link a:hover { color: var(--gold-bright); }
 
   .gp-pitcher-footer { padding-top: 0; border-top: 1px solid var(--gold-line-soft); }
   .gp-pitcher-name {
@@ -1246,6 +1249,26 @@ async function fetchPadresGame() {
   return renderNextGame();
 }
 
+async function fetchGameThreadUrl(oppShortName) {
+  try {
+    const q = encodeURIComponent('[Game Thread] Padres');
+    const data = await fetchJSON(
+      `https://www.reddit.com/r/Padres/search.json?q=${q}&restrict_sr=1&sort=new&limit=10&type=link`
+    );
+    const now  = Date.now() / 1000;
+    const post = (data?.data?.children ?? []).find(c => {
+      const title = (c.data?.title ?? '').toLowerCase();
+      const age   = now - (c.data?.created_utc ?? 0);
+      return title.includes('game thread')
+          && title.includes(oppShortName.toLowerCase())
+          && age < 86400;
+    });
+    return post ? `https://reddit-stream.com/comments/${post.data.id}/` : null;
+  } catch {
+    return null;
+  }
+}
+
 async function renderLiveGame(liveGame) {
   const [feed, box] = await Promise.all([
     fetchJSON(`${STATS_API_V11}/game/${liveGame.gamePk}/feed/live`),
@@ -1271,6 +1294,10 @@ async function renderLiveGame(liveGame) {
 
   const padresShortName = feed.gameData?.teams?.[padresSide]?.teamName ?? 'Padres';
   const oppShortName    = feed.gameData?.teams?.[oppSide]?.teamName    ?? oppAbbr;
+
+  if (_gameThreadUrlCache === undefined)
+    _gameThreadUrlCache = await fetchGameThreadUrl(oppShortName);
+  const gameThreadUrl = _gameThreadUrlCache;
 
   const homeRuns = linescore.teams?.home?.runs ?? 0;
   const awayRuns = linescore.teams?.away?.runs ?? 0;
@@ -1403,6 +1430,7 @@ async function renderLiveGame(liveGame) {
       <div class="gp-inning-big">${inning}${ordinalSuffix(inning)}</div>
       <div class="gp-count-big">${batterCount || '0-0'}</div>
       ${displayPitchDesc ? `<div class="gp-last-pitch">${displayPitchDesc}</div>` : ''}
+      ${gameThreadUrl ? `<div class="gp-thread-link"><a href="${gameThreadUrl}" target="_blank" rel="noopener">Game Thread ↗</a></div>` : ''}
     </div>`;
 
   /* Trim 3-letter abbrs to 2 for score display (CHC→CH, LAD→LA) */
@@ -1580,6 +1608,7 @@ async function renderNextGame() {
 let _gamePollInterval = null;
 let _standingsPollInterval = null;
 let _lastPitchDescCache = '';
+let _gameThreadUrlCache = undefined; /* undefined=not fetched, null=not found, string=url */
 
 function startGamePolling() {
   if (_gamePollInterval) return;
@@ -1598,6 +1627,7 @@ function stopGamePolling() {
     _gamePollInterval = null;
   }
   _lastPitchDescCache = '';
+  _gameThreadUrlCache = undefined;
 }
 
 function startStandingsPolling() {
