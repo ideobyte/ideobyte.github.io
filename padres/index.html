@@ -483,6 +483,7 @@
   .gp-half-arrow-sm    { font-size: 0.55rem; color: var(--gold-bright); line-height: 1; }
   .gp-inning-big       { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--cream); line-height: 1; letter-spacing: 0.05rem; }
   .gp-count-big        { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; color: var(--gold-bright); line-height: 1.2; letter-spacing: 0.05rem; }
+  .gp-last-pitch       { font-size: 0.5rem; color: rgba(200,146,42,0.65); text-align: center; letter-spacing: 0.03rem; margin-top: 0.15rem; max-width: 9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
 
   .gp-pitcher-footer { padding-top: 0; border-top: 1px solid var(--gold-line-soft); }
   .gp-pitcher-name {
@@ -1287,6 +1288,75 @@ async function renderLiveGame(liveGame) {
   const batterCount   = play.count ? `${play.count.balls}-${play.count.strikes}` : '';
   const currentBatterLast = lastName(currentBatter);
 
+  const lastPitchDesc = (() => {
+    if (isWarmup) return '';
+    const batterLast = currentBatterLast !== '—' ? currentBatterLast : '';
+
+    const pitchPhrase = (desc, count) => {
+      const d = desc.toLowerCase();
+      if (d === 'ball' || d === 'intent ball' || d.includes('ball in dirt') || d.includes('pitchout'))
+        return `takes ball ${count?.balls ?? ''}`.trim();
+      if (d === 'called strike') return `takes strike ${count?.strikes ?? ''}`.trim();
+      if (d.includes('swinging strike') || d === 'missed bunt') return `swings and misses for strike ${count?.strikes ?? ''}`.trim();
+      if (d.includes('foul tip'))  return `fouls it off for strike ${count?.strikes ?? ''}`.trim();
+      if (d.includes('foul bunt')) return `fouls off the bunt for strike ${count?.strikes ?? ''}`.trim();
+      if (d.includes('foul'))      return `fouls it off for strike ${count?.strikes ?? ''}`.trim();
+      return desc;
+    };
+
+    const eventPhrase = event => {
+      const e = event.toLowerCase();
+      if (e === 'single')                                return 'singles';
+      if (e === 'double')                                return 'doubles';
+      if (e === 'triple')                                return 'triples';
+      if (e.includes('home run'))                        return 'homers';
+      if (e.includes('strikeout'))                       return 'strikes out';
+      if (e === 'walk' || e === 'intent walk')           return 'walks';
+      if (e === 'hit by pitch')                          return 'hit by pitch';
+      if (e.includes('groundout') || e === 'ground out') return 'grounds out';
+      if (e.includes('flyout')    || e === 'fly out')    return 'flies out';
+      if (e.includes('lineout')   || e === 'line out')   return 'lines out';
+      if (e.includes('pop out')   || e.includes('popout')) return 'pops out';
+      if (e.includes('double play'))                     return 'grounds into a double play';
+      if (e.includes('triple play'))                     return 'into a triple play';
+      if (e.includes('sac fly'))                         return 'hits a sac fly';
+      if (e.includes('sac bunt'))                        return 'lays down a sac bunt';
+      if (e.includes('fielders choice out'))             return 'into a fielder\'s choice';
+      if (e.includes('fielders choice'))                 return 'reaches on fielder\'s choice';
+      if (e.includes('force out'))                       return 'into a force out';
+      return event;
+    };
+
+    if (play.about?.isComplete) {
+      const event     = play.result?.event ?? '';
+      const eventType = (play.result?.eventType ?? '').toLowerCase();
+      const recordsOut = eventType.includes('out') || eventType === 'strikeout'
+                      || eventType === 'double_play' || eventType === 'triple_play'
+                      || eventType === 'grounded_into_double_play';
+
+      const scorers = (play.runners ?? [])
+        .filter(r => (r.movement?.end ?? '').toLowerCase() === 'score'
+                  && !r.movement?.isOut
+                  && lastName(r.details?.runner?.fullName ?? '') !== batterLast)
+        .map(r => lastName(r.details?.runner?.fullName ?? ''))
+        .filter(Boolean);
+
+      const label  = [batterLast, eventPhrase(event)].filter(Boolean).join(' ');
+      const extras = [];
+      if (scorers.length) extras.push(scorers.map(s => `${s} scores`).join(', '));
+      if (recordsOut) extras.push(outs > 0 ? `${outs} out${outs !== 1 ? 's' : ''}` : 'inning over');
+      return label + (extras.length ? ' · ' + extras.join(' · ') : '');
+    }
+
+    const lastPitch = [...(play.playEvents ?? [])].reverse().find(e => e.isPitch);
+    const pitchDesc = lastPitch?.details?.description ?? '';
+    if (!pitchDesc) return '';
+    const phrase = pitchPhrase(pitchDesc, play.count);
+    return batterLast ? `${batterLast} ${phrase}` : phrase;
+  })();
+  if (lastPitchDesc) _lastPitchDescCache = lastPitchDesc;
+  const displayPitchDesc = lastPitchDesc || _lastPitchDescCache;
+
   const halfIsTop  = half.toLowerCase().includes('top');
   const halfArrow = halfIsTop ? '▲' : '▼';
 
@@ -1332,6 +1402,7 @@ async function renderLiveGame(liveGame) {
       <div class="gp-half-arrow-sm">${halfArrow}</div>
       <div class="gp-inning-big">${inning}${ordinalSuffix(inning)}</div>
       <div class="gp-count-big">${batterCount || '0-0'}</div>
+      ${displayPitchDesc ? `<div class="gp-last-pitch">${displayPitchDesc}</div>` : ''}
     </div>`;
 
   /* Trim 3-letter abbrs to 2 for score display (CHC→CH, LAD→LA) */
@@ -1508,6 +1579,7 @@ async function renderNextGame() {
 /* ── Polling ──────────────────────────────────────────────────── */
 let _gamePollInterval = null;
 let _standingsPollInterval = null;
+let _lastPitchDescCache = '';
 
 function startGamePolling() {
   if (_gamePollInterval) return;
@@ -1525,6 +1597,7 @@ function stopGamePolling() {
     clearInterval(_gamePollInterval);
     _gamePollInterval = null;
   }
+  _lastPitchDescCache = '';
 }
 
 function startStandingsPolling() {
