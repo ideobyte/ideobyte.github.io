@@ -1107,7 +1107,7 @@ async function fetchNLWest() {
       gb = n <= 0 ? '—' : (n % 1 === 0 ? String(n) : n.toFixed(1));
     }
 
-    const gameCell = buildGameCell(todayGames[team.id]);
+    const gameCell = buildGameCell(todayGames[team.id], team.id);
 
     const streakCode = rec.streak ?? '';
     const streakClass = streakCode.startsWith('W') ? 'streak-w' : streakCode.startsWith('L') ? 'streak-l' : '';
@@ -1132,10 +1132,9 @@ async function fetchNLWest() {
   $.standingsBody.innerHTML = html;
 }
 
-function buildGameCell(g) {
+function buildGameCell(g, teamId) {
   if (!g) return '<div class="no-game">Off day</div>';
 
-  const teamId  = NL_WEST_IDS.has(g.homeId) ? g.homeId : g.awayId;
   const isHome  = g.homeId === teamId;
   const myAbbr  = isHome ? g.homeAbbr : g.awayAbbr;
   const oppAbbr = isHome ? g.awayAbbr : g.homeAbbr;
