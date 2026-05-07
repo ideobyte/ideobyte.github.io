@@ -1852,8 +1852,10 @@ async function loadHighlights(oppName) {
       } catch {}
     }
     if (!_cachedHighlightVideoId) {
+      const todayPT = getLocalDateStr(0);
+      const publishedAfter = encodeURIComponent(`${todayPT}T08:00:00Z`);
       const q = encodeURIComponent(`Padres ${oppName} Highlights`);
-      const data = await fetchJSON(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&maxResults=1&key=${YT_API_KEY}`);
+      const data = await fetchJSON(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&publishedAfter=${publishedAfter}&maxResults=1&key=${YT_API_KEY}`);
       _cachedHighlightVideoId = data.items?.[0]?.id?.videoId ?? '';
       if (_cachedHighlightVideoId) _lsSet('padres_highlights', getLocalDateStr(0), _cachedHighlightVideoId);
     }
