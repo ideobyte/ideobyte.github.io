@@ -770,6 +770,8 @@
     border-radius: 4px;
     padding: 0.4rem 1.2rem;
     cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
     transition: background 0.15s, color 0.15s;
   }
   .highlights-btn:hover {
@@ -1786,6 +1788,27 @@ function slideUp(el, ms = 380) {
   });
 }
 
+function animateBtnText(btn, newText, ms = 220) {
+  const fromW = btn.getBoundingClientRect().width;
+  if (!fromW) { btn.textContent = newText; return; }
+  btn.textContent = newText;
+  btn.style.transition = 'none';
+  btn.style.width = 'max-content';
+  btn.getBoundingClientRect();
+  const toW = btn.getBoundingClientRect().width;
+  btn.style.width = fromW + 'px';
+  btn.getBoundingClientRect();
+  btn.style.transition = `width ${ms}ms ease, background 0.15s, color 0.15s`;
+  btn.style.width = toW + 'px';
+  const cleanup = () => { btn.style.transition = ''; btn.style.width = ''; };
+  btn.addEventListener('transitionend', function h(e) {
+    if (e.propertyName !== 'width') return;
+    btn.removeEventListener('transitionend', h);
+    cleanup();
+  });
+  setTimeout(cleanup, ms + 100);
+}
+
 function _lsGet(key, dateStr) {
   try { const s = JSON.parse(localStorage.getItem(key) ?? 'null'); if (s?.date === dateStr) return s.videoId; } catch {}
   return null;
@@ -1801,8 +1824,8 @@ let _highlightsActive        = null; // 'today' | 'yesterday' | null
 
 function _resetHighlightsBtns(todayLabel, yestLabel) {
   $.highlightsSection.style.display = '';
-  if (todayLabel !== null) { $.highlightsBtn.textContent = todayLabel; $.highlightsBtn.style.display = ''; }
-  if (yestLabel  !== null) { $.highlightsYesterdayBtn.textContent = yestLabel; $.highlightsYesterdayBtn.style.display = ''; }
+  if (todayLabel !== null) { animateBtnText($.highlightsBtn, todayLabel); $.highlightsBtn.style.display = ''; }
+  if (yestLabel  !== null) { animateBtnText($.highlightsYesterdayBtn, yestLabel); $.highlightsYesterdayBtn.style.display = ''; }
 }
 
 async function _closeHighlights() {
@@ -1842,7 +1865,7 @@ async function loadHighlights(oppName) {
     $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${_cachedHighlightVideoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
     slideDown($.highlightsContent);
     _highlightsActive = 'today';
-    $.highlightsBtn.textContent = '✕ Close Highlights'; $.highlightsBtn.style.display = '';
+    animateBtnText($.highlightsBtn, '✕ Close Highlights'); $.highlightsBtn.style.display = '';
     $.highlightsBtn.onclick = () => loadHighlights(oppName);
   } catch (e) {
     console.error('Highlights fetch failed:', e);
@@ -1885,7 +1908,7 @@ async function loadYesterdayHighlights(oppName) {
     $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${_cachedYesterdayVideoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
     slideDown($.highlightsContent);
     _highlightsActive = 'yesterday';
-    $.highlightsYesterdayBtn.textContent = '✕ Close Highlights'; $.highlightsYesterdayBtn.style.display = '';
+    animateBtnText($.highlightsYesterdayBtn, '✕ Close Highlights'); $.highlightsYesterdayBtn.style.display = '';
     $.highlightsYesterdayBtn.onclick = () => loadYesterdayHighlights(oppName);
   } catch (e) {
     console.error('Yesterday highlights fetch failed:', e);
