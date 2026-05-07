@@ -779,6 +779,7 @@
     color: var(--cream-muted);
     margin-top: 0.6rem;
   }
+  #highlightsContent { width: 100%; }
   .highlights-embed-wrap {
     width: 100%;
     aspect-ratio: 16 / 9;
@@ -1757,6 +1758,7 @@ window.addEventListener('resize', () => {
 /* ── Highlights ───────────────────────────────────────────────── */
 function renderHighlightsButton(oppName) {
   $.highlightsSection.style.display = '';
+  $.highlightsBtn.textContent = '▶ Watch Highlights';
   $.highlightsBtn.style.display = '';
   $.highlightsContent.innerHTML = '';
   $.highlightsBtn.onclick = () => loadHighlights(oppName);
@@ -1771,12 +1773,17 @@ async function loadHighlights(oppName) {
     const data = await fetchJSON(url);
     const videoId = data.items?.[0]?.id?.videoId;
     if (!videoId) {
+      $.highlightsBtn.style.display = '';
       $.highlightsContent.innerHTML = '<div class="highlights-status">Highlights not posted yet — check back later.</div>';
       return;
     }
     $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    $.highlightsBtn.textContent = '✕ Close Highlights';
+    $.highlightsBtn.style.display = '';
+    $.highlightsBtn.onclick = () => renderHighlightsButton(oppName);
   } catch (e) {
     console.error('Highlights fetch failed:', e);
+    $.highlightsBtn.style.display = '';
     $.highlightsContent.innerHTML = `<div class="highlights-status">Could not load highlights. (${e.message})</div>`;
   }
 }
