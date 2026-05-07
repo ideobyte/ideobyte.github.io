@@ -1926,6 +1926,10 @@ async function renderTodayHighlights() {
   const sched = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${todayStr}&teamId=${PADRES_ID}&gameType=R`).catch(() => null);
   const game = sched?.dates?.[0]?.games?.[0];
   if (!game) return;
+  const abstract = game.status?.abstractGameState ?? '';
+  const detailed = (game.status?.detailedState ?? '').toLowerCase();
+  if (abstract !== 'Final') return;
+  if (detailed.includes('postponed') || detailed.includes('cancelled')) return;
   const homeId = game.teams.home.team.id;
   const oppSide = homeId === PADRES_ID ? 'away' : 'home';
   const oppName = game.teams[oppSide].team.name;
