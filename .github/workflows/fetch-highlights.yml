@@ -1,0 +1,79 @@
+name: Fetch Padres Highlights
+
+on:
+  schedule:
+    - cron: '*/30 3-8 * * *'  # Every 30 min, ~9pm-midnight PT
+  workflow_dispatch:           # Allow manual trigger from GitHub UI
+
+jobs:
+  fetch-highlights:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get today's date in PT
+        id: date
+        run: echo "today=$(TZ='America/Los_Angeles' date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Check if highlights already cached for today
+        id: cache
+        run: |
+          TODAY="${{ steps.date.outputs.today }}"
+          if [ -f padres/highlights.json ]; then
+            CACHED_DATE=$(jq -r '.date // ""' padres/highlights.json)
+            CACHED_ID=$(jq -r '.videoId // ""' padres/highlights.json)
+            if [ "$CACHED_DATE" = "$TODAY" ] && [ -n "$CACHED_ID" ]; then
+              echo "hit=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+          echo "hit=false" >> $GITHUB_OUTPUT
+
+      - name: Check if Padres game is final today
+        if: steps.cache.outputs.hit == 'false'
+        id: game
+        run: |
+          TODAY="${{ steps.date.outputs.today }}"
+          RESP=$(curl -s "https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${TODAY}&teamId=135&gameType=R")
+          ABSTRACT=$(echo "$RESP" | jq -r '.dates[0].games[0].status.abstractGameState // ""')
+          DETAILED=$(echo "$RESP" | jq -r '.dates[0].games[0].status.detailedState // ""')
+          HOME_ID=$(echo "$RESP" | jq -r '.dates[0].games[0].teams.home.team.id // ""')
+          AWAY_NAME=$(echo "$RESP" | jq -r '.dates[0].games[0].teams.away.team.name // ""')
+          HOME_NAME=$(echo "$RESP" | jq -r '.dates[0].games[0].teams.home.team.name // ""')
+          if [ "$ABSTRACT" = "Final" ] && [[ "$DETAILED" != *"Postponed"* ]] && [[ "$DETAILED" != *"Cancelled"* ]]; then
+            if [ "$HOME_ID" = "135" ]; then
+              OPP="$AWAY_NAME"
+            else
+              OPP="$HOME_NAME"
+            fi
+            echo "final=true" >> $GITHUB_OUTPUT
+            echo "opp=$OPP" >> $GITHUB_OUTPUT
+          else
+            echo "final=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Search YouTube for highlights
+        if: steps.game.outputs.final == 'true'
+        id: youtube
+        run: |
+          TODAY="${{ steps.date.outputs.today }}"
+          OPP="${{ steps.game.outputs.opp }}"
+          PUBLISHED_AFTER="${TODAY}T08:00:00Z"
+          Q=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "Padres ${OPP} Highlights")
+          RESP=$(curl -s "https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=UCoLrcjPV5PbUrUyXq5mjc_A&q=${Q}&type=video&order=date&publishedAfter=${PUBLISHED_AFTER}&maxResults=1&key=${{ secrets.YT_API_KEY }}")
+          VIDEO_ID=$(echo "$RESP" | jq -r '.items[0].id.videoId // ""')
+          echo "videoId=$VIDEO_ID" >> $GITHUB_OUTPUT
+
+      - name: Write highlights cache file
+        if: steps.youtube.outputs.videoId != ''
+        run: |
+          echo "{\"date\":\"${{ steps.date.outputs.today }}\",\"videoId\":\"${{ steps.youtube.outputs.videoId }}\"}" > padres/highlights.json
+
+      - name: Commit and push
+        if: steps.youtube.outputs.videoId != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add padres/highlights.json
+          git commit -m "Update Padres highlights for ${{ steps.date.outputs.today }}"
+          git push

@@ -1759,7 +1759,21 @@ window.addEventListener('resize', () => {
 });
 
 /* ── Highlights ───────────────────────────────────────────────── */
-let _cachedHighlightVideoId = null;
+function getStoredHighlightVideoId() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('padres_highlights') ?? 'null');
+    if (stored?.date === getLocalDateStr(0)) return stored.videoId;
+  } catch {}
+  return null;
+}
+
+function storeHighlightVideoId(videoId) {
+  try {
+    localStorage.setItem('padres_highlights', JSON.stringify({ date: getLocalDateStr(0), videoId }));
+  } catch {}
+}
+
+let _cachedHighlightVideoId = getStoredHighlightVideoId();
 
 function renderHighlightsButton(oppName) {
   $.highlightsSection.style.display = '';
@@ -1773,12 +1787,24 @@ async function loadHighlights(oppName) {
   $.highlightsBtn.style.display = 'none';
   try {
     if (!_cachedHighlightVideoId) {
+      // Check server-side cache file first (written by GitHub Actions, no API key needed)
+      try {
+        const cache = await fetchJSON('/padres/highlights.json');
+        if (cache.date === getLocalDateStr(0) && cache.videoId) {
+          _cachedHighlightVideoId = cache.videoId;
+          storeHighlightVideoId(_cachedHighlightVideoId);
+        }
+      } catch {}
+    }
+    if (!_cachedHighlightVideoId) {
+      // Fall back to YouTube API
       const todayPT = getLocalDateStr(0);
       const publishedAfter = encodeURIComponent(`${todayPT}T08:00:00Z`);
       const q = encodeURIComponent(`Padres ${oppName} Highlights`);
       const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&publishedAfter=${publishedAfter}&maxResults=1&key=${YT_API_KEY}`;
       const data = await fetchJSON(url);
       _cachedHighlightVideoId = data.items?.[0]?.id?.videoId ?? '';
+      if (_cachedHighlightVideoId) storeHighlightVideoId(_cachedHighlightVideoId);
     }
     if (!_cachedHighlightVideoId) {
       $.highlightsBtn.style.display = '';
@@ -1897,9 +1923,9 @@ async function init() {
     $.gamePanel.innerHTML = `${CORNERS_HTML}<div class="panel-error">Error: ${err.message}</div>`;
   });
 
-  await Promise.all([promosTask, standingsTask, gameTask]);
+  const highlightsTask = renderTodayHighlights().catch(() => {});
 
-  renderTodayHighlights().catch(() => {});
+  await Promise.all([promosTask, standingsTask, gameTask, highlightsTask]);
 
   /* After both panels load, lock both to standingsPanel height */
   requestAnimationFrame(lockPanelHeights);
