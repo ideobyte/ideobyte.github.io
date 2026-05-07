@@ -857,6 +857,10 @@
 
 <div class="grid" id="grid"></div>
 <div class="matchup-line" id="matchupLine"></div>
+<div class="highlights-section" id="highlightsYesterdaySection" style="display:none">
+  <button class="highlights-btn" id="highlightsYesterdayBtn">&#9654; Highlights from Yesterday's Game</button>
+  <div id="highlightsYesterdayContent"></div>
+</div>
 
 <script>
 'use strict';
@@ -983,9 +987,12 @@ const $ = {
   headerDate:    document.getElementById('headerDate'),
   grid:             document.getElementById('grid'),
   matchupLine:      document.getElementById('matchupLine'),
-  highlightsSection: document.getElementById('highlightsSection'),
-  highlightsBtn:    document.getElementById('highlightsBtn'),
-  highlightsContent: document.getElementById('highlightsContent'),
+  highlightsSection:         document.getElementById('highlightsSection'),
+  highlightsBtn:             document.getElementById('highlightsBtn'),
+  highlightsContent:         document.getElementById('highlightsContent'),
+  highlightsYesterdaySection: document.getElementById('highlightsYesterdaySection'),
+  highlightsYesterdayBtn:    document.getElementById('highlightsYesterdayBtn'),
+  highlightsYesterdayContent: document.getElementById('highlightsYesterdayContent'),
   get standingsBody() { return document.getElementById('standingsBody'); },
   gamePanel:     document.getElementById('gamePanel'),
   get nlwestPanel()   { return document.getElementById('nlwestPanel'); },
@@ -1759,21 +1766,38 @@ window.addEventListener('resize', () => {
 });
 
 /* ── Highlights ───────────────────────────────────────────────── */
-function getStoredHighlightVideoId() {
-  try {
-    const stored = JSON.parse(localStorage.getItem('padres_highlights') ?? 'null');
-    if (stored?.date === getLocalDateStr(0)) return stored.videoId;
-  } catch {}
+function slideDown(el, ms = 380) {
+  return new Promise(resolve => {
+    el.style.overflow = 'hidden'; el.style.transition = 'none'; el.style.height = '0px';
+    el.getBoundingClientRect();
+    el.style.transition = `height ${ms}ms ease`; el.style.height = el.scrollHeight + 'px';
+    const cleanup = () => { el.style.transition = ''; el.style.height = ''; el.style.overflow = ''; resolve(); };
+    el.addEventListener('transitionend', function h(e) { if (e.propertyName !== 'height') return; el.removeEventListener('transitionend', h); cleanup(); });
+    setTimeout(cleanup, ms + 100);
+  });
+}
+
+function slideUp(el, ms = 380) {
+  return new Promise(resolve => {
+    el.style.overflow = 'hidden'; el.style.transition = 'none'; el.style.height = el.getBoundingClientRect().height + 'px';
+    el.getBoundingClientRect();
+    el.style.transition = `height ${ms}ms ease`; el.style.height = '0px';
+    const cleanup = () => { el.style.transition = ''; el.style.height = ''; el.style.overflow = ''; resolve(); };
+    el.addEventListener('transitionend', function h(e) { if (e.propertyName !== 'height') return; el.removeEventListener('transitionend', h); cleanup(); });
+    setTimeout(cleanup, ms + 100);
+  });
+}
+
+function _lsGet(key, dateStr) {
+  try { const s = JSON.parse(localStorage.getItem(key) ?? 'null'); if (s?.date === dateStr) return s.videoId; } catch {}
   return null;
 }
-
-function storeHighlightVideoId(videoId) {
-  try {
-    localStorage.setItem('padres_highlights', JSON.stringify({ date: getLocalDateStr(0), videoId }));
-  } catch {}
+function _lsSet(key, dateStr, videoId) {
+  try { localStorage.setItem(key, JSON.stringify({ date: dateStr, videoId })); } catch {}
 }
 
-let _cachedHighlightVideoId = getStoredHighlightVideoId();
+/* ── Today's highlights ──────────────────────────────────────── */
+let _cachedHighlightVideoId = _lsGet('padres_highlights', getLocalDateStr(0));
 
 function renderHighlightsButton(oppName) {
   $.highlightsSection.style.display = '';
@@ -1787,69 +1811,85 @@ async function loadHighlights(oppName) {
   $.highlightsBtn.style.display = 'none';
   try {
     if (!_cachedHighlightVideoId) {
-      // Check server-side cache file first (written by GitHub Actions, no API key needed)
       try {
         const cache = await fetchJSON('/padres/highlights.json');
         if (cache.date === getLocalDateStr(0) && cache.videoId) {
           _cachedHighlightVideoId = cache.videoId;
-          storeHighlightVideoId(_cachedHighlightVideoId);
+          _lsSet('padres_highlights', getLocalDateStr(0), _cachedHighlightVideoId);
         }
       } catch {}
     }
     if (!_cachedHighlightVideoId) {
-      // Fall back to YouTube API
-      const todayPT = getLocalDateStr(0);
-      const publishedAfter = encodeURIComponent(`${todayPT}T08:00:00Z`);
       const q = encodeURIComponent(`Padres ${oppName} Highlights`);
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&publishedAfter=${publishedAfter}&maxResults=1&key=${YT_API_KEY}`;
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&maxResults=1&key=${YT_API_KEY}`;
       const data = await fetchJSON(url);
       _cachedHighlightVideoId = data.items?.[0]?.id?.videoId ?? '';
-      if (_cachedHighlightVideoId) storeHighlightVideoId(_cachedHighlightVideoId);
+      if (_cachedHighlightVideoId) _lsSet('padres_highlights', getLocalDateStr(0), _cachedHighlightVideoId);
     }
     if (!_cachedHighlightVideoId) {
       $.highlightsBtn.style.display = '';
       $.highlightsContent.innerHTML = '<div class="highlights-status">Highlights not posted yet — check back later.</div>';
       return;
     }
-    const videoId = _cachedHighlightVideoId;
-    const c = $.highlightsContent;
-    c.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-    c.style.overflow   = 'hidden';
-    c.style.transition = 'none';
-    c.style.height     = '0px';
-    c.getBoundingClientRect();
-    const targetH = c.scrollHeight;
-    c.style.transition = 'height 380ms ease';
-    c.style.height     = targetH + 'px';
-    const cleanup = () => { c.style.transition = ''; c.style.height = ''; c.style.overflow = ''; };
-    c.addEventListener('transitionend', function h(e) {
-      if (e.propertyName !== 'height') return;
-      c.removeEventListener('transitionend', h);
-      cleanup();
-    });
-    setTimeout(cleanup, 480);
+    $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${_cachedHighlightVideoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    slideDown($.highlightsContent);
     $.highlightsBtn.textContent = '✕ Close Highlights';
     $.highlightsBtn.style.display = '';
-    $.highlightsBtn.onclick = () => {
-      const c = $.highlightsContent;
-      c.style.overflow   = 'hidden';
-      c.style.transition = 'none';
-      c.style.height     = c.getBoundingClientRect().height + 'px';
-      c.getBoundingClientRect();
-      c.style.transition = 'height 380ms ease';
-      c.style.height     = '0px';
-      const done = () => { c.style.transition = ''; c.style.height = ''; c.style.overflow = ''; renderHighlightsButton(oppName); };
-      c.addEventListener('transitionend', function h(e) {
-        if (e.propertyName !== 'height') return;
-        c.removeEventListener('transitionend', h);
-        done();
-      });
-      setTimeout(done, 480);
-    };
+    $.highlightsBtn.onclick = async () => { $.highlightsBtn.style.display = 'none'; await slideUp($.highlightsContent); renderHighlightsButton(oppName); };
   } catch (e) {
     console.error('Highlights fetch failed:', e);
     $.highlightsBtn.style.display = '';
     $.highlightsContent.innerHTML = `<div class="highlights-status">Could not load highlights. (${e.message})</div>`;
+  }
+}
+
+/* ── Yesterday's highlights ──────────────────────────────────── */
+let _cachedYesterdayVideoId = _lsGet('padres_highlights_yesterday', getLocalDateStr(-1));
+
+function renderYesterdayHighlightsButton(oppName) {
+  $.highlightsYesterdaySection.style.display = '';
+  $.highlightsYesterdayBtn.textContent = '▶ Highlights from Yesterday\'s Game';
+  $.highlightsYesterdayBtn.style.display = '';
+  $.highlightsYesterdayContent.innerHTML = '';
+  $.highlightsYesterdayBtn.onclick = () => loadYesterdayHighlights(oppName);
+}
+
+async function loadYesterdayHighlights(oppName) {
+  $.highlightsYesterdayBtn.style.display = 'none';
+  const yesterdayPT = getLocalDateStr(-1);
+  try {
+    if (!_cachedYesterdayVideoId) {
+      try {
+        const cache = await fetchJSON('/padres/highlights-yesterday.json');
+        if (cache.date === yesterdayPT && cache.videoId) {
+          _cachedYesterdayVideoId = cache.videoId;
+          _lsSet('padres_highlights_yesterday', yesterdayPT, _cachedYesterdayVideoId);
+        }
+      } catch {}
+    }
+    if (!_cachedYesterdayVideoId) {
+      const publishedAfter = encodeURIComponent(`${yesterdayPT}T08:00:00Z`);
+      const publishedBefore = encodeURIComponent(`${getLocalDateStr(0)}T08:00:00Z`);
+      const q = encodeURIComponent(`Padres ${oppName} Highlights`);
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&publishedAfter=${publishedAfter}&publishedBefore=${publishedBefore}&maxResults=1&key=${YT_API_KEY}`;
+      const data = await fetchJSON(url);
+      _cachedYesterdayVideoId = data.items?.[0]?.id?.videoId ?? '';
+      if (_cachedYesterdayVideoId) _lsSet('padres_highlights_yesterday', yesterdayPT, _cachedYesterdayVideoId);
+    }
+    if (!_cachedYesterdayVideoId) {
+      $.highlightsYesterdayBtn.style.display = '';
+      $.highlightsYesterdayContent.innerHTML = '<div class="highlights-status">Highlights not available.</div>';
+      return;
+    }
+    $.highlightsYesterdayContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${_cachedYesterdayVideoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    slideDown($.highlightsYesterdayContent);
+    $.highlightsYesterdayBtn.textContent = '✕ Close Highlights';
+    $.highlightsYesterdayBtn.style.display = '';
+    $.highlightsYesterdayBtn.onclick = async () => { $.highlightsYesterdayBtn.style.display = 'none'; await slideUp($.highlightsYesterdayContent); renderYesterdayHighlightsButton(oppName); };
+  } catch (e) {
+    console.error('Yesterday highlights fetch failed:', e);
+    $.highlightsYesterdayBtn.style.display = '';
+    $.highlightsYesterdayContent.innerHTML = `<div class="highlights-status">Could not load highlights. (${e.message})</div>`;
   }
 }
 
@@ -1909,6 +1949,7 @@ async function renderPromos() {
     ? `<span class="matchup-live">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayR} — ${homeR} ${homeLabel}`
     : `${awayLabel} ${awayR} — ${homeR} ${homeLabel}`;
 
+  if (!isLive) renderYesterdayHighlightsButton(oppName);
 }
 
 async function init() {
