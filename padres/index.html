@@ -1843,7 +1843,7 @@ function renderHighlightsButton(oppName) {
 async function loadHighlights(oppName) {
   if (_highlightsActive === 'today') { await _closeHighlights(); renderHighlightsButton(oppName); return; }
   if (_highlightsActive === 'yesterday') { $.highlightsContent.innerHTML = ''; _highlightsActive = null; }
-  $.highlightsBtn.style.display = 'none';
+  $.highlightsBtn.style.pointerEvents = 'none';
   try {
     if (!_cachedHighlightVideoId) {
       try {
@@ -1858,18 +1858,19 @@ async function loadHighlights(oppName) {
       if (_cachedHighlightVideoId) _lsSet('padres_highlights', getLocalDateStr(0), _cachedHighlightVideoId);
     }
     if (!_cachedHighlightVideoId) {
-      $.highlightsBtn.style.display = '';
+      $.highlightsBtn.style.pointerEvents = '';
       $.highlightsContent.innerHTML = '<div class="highlights-status">Highlights not posted yet — check back later.</div>';
       return;
     }
     $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${_cachedHighlightVideoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
     slideDown($.highlightsContent);
     _highlightsActive = 'today';
-    animateBtnText($.highlightsBtn, '✕ Close Highlights'); $.highlightsBtn.style.display = '';
+    animateBtnText($.highlightsBtn, '✕ Close Highlights');
+    $.highlightsBtn.style.pointerEvents = '';
     $.highlightsBtn.onclick = () => loadHighlights(oppName);
   } catch (e) {
     console.error('Highlights fetch failed:', e);
-    $.highlightsBtn.style.display = '';
+    $.highlightsBtn.style.pointerEvents = '';
     $.highlightsContent.innerHTML = `<div class="highlights-status">Could not load highlights. (${e.message})</div>`;
   }
 }
@@ -1883,7 +1884,7 @@ function renderYesterdayHighlightsButton(oppName) {
 async function loadYesterdayHighlights(oppName) {
   if (_highlightsActive === 'yesterday') { await _closeHighlights(); renderYesterdayHighlightsButton(oppName); return; }
   if (_highlightsActive === 'today') { $.highlightsContent.innerHTML = ''; _highlightsActive = null; }
-  $.highlightsYesterdayBtn.style.display = 'none';
+  $.highlightsYesterdayBtn.style.pointerEvents = 'none';
   const yesterdayPT = getLocalDateStr(-1);
   try {
     if (!_cachedYesterdayVideoId) {
@@ -1901,18 +1902,19 @@ async function loadYesterdayHighlights(oppName) {
       if (_cachedYesterdayVideoId) _lsSet('padres_highlights_yesterday', yesterdayPT, _cachedYesterdayVideoId);
     }
     if (!_cachedYesterdayVideoId) {
-      $.highlightsYesterdayBtn.style.display = '';
+      $.highlightsYesterdayBtn.style.pointerEvents = '';
       $.highlightsContent.innerHTML = '<div class="highlights-status">Highlights not available.</div>';
       return;
     }
     $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${_cachedYesterdayVideoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
     slideDown($.highlightsContent);
     _highlightsActive = 'yesterday';
-    animateBtnText($.highlightsYesterdayBtn, '✕ Close Highlights'); $.highlightsYesterdayBtn.style.display = '';
+    animateBtnText($.highlightsYesterdayBtn, '✕ Close Highlights');
+    $.highlightsYesterdayBtn.style.pointerEvents = '';
     $.highlightsYesterdayBtn.onclick = () => loadYesterdayHighlights(oppName);
   } catch (e) {
     console.error('Yesterday highlights fetch failed:', e);
-    $.highlightsYesterdayBtn.style.display = '';
+    $.highlightsYesterdayBtn.style.pointerEvents = '';
     $.highlightsContent.innerHTML = `<div class="highlights-status">Could not load highlights. (${e.message})</div>`;
   }
 }
