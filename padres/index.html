@@ -746,6 +746,56 @@
     margin: 0.35rem 0.8rem 0.15rem;
   }
 
+  /* ── Highlights section ─────────────────────────────────────── */
+  .highlights-section {
+    width: 100%;
+    max-width: 73.33rem;
+    position: relative;
+    z-index: 1;
+    margin-top: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .highlights-btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2rem;
+    color: var(--gold-bright);
+    background: transparent;
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    padding: 0.4rem 1.2rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .highlights-btn:hover {
+    background: var(--gold);
+    color: var(--brown);
+  }
+  .highlights-status {
+    font-size: 0.5rem;
+    letter-spacing: 0.1rem;
+    color: var(--cream-muted);
+    margin-top: 0.6rem;
+  }
+  .highlights-embed-wrap {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    margin-top: 0.8rem;
+    border: 1px solid var(--gold-line-mid);
+    border-radius: 4px;
+  }
+  .highlights-embed-wrap iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+  }
+
 </style>
 </head>
 <body>
@@ -801,6 +851,10 @@
 
 <div class="grid" id="grid"></div>
 <div class="matchup-line" id="matchupLine"></div>
+<div class="highlights-section" id="highlightsSection" style="display:none">
+  <button class="highlights-btn" id="highlightsBtn">&#9654; Watch Highlights</button>
+  <div id="highlightsContent"></div>
+</div>
 
 <script>
 'use strict';
@@ -812,6 +866,8 @@ const STATS_API_V11 = 'https://statsapi.mlb.com/api/v1.1';
 const GAME_POLL_MS = 15_000;
 const STANDINGS_POLL_MS = 30_000;
 const SEASON = 2026;
+const YT_API_KEY = 'AIzaSyB-0Cim9vyN-CFjjFhhewcioO3Wzi6YVLY';
+const MLB_YT_CHANNEL = 'UCcozimuFfFGBRNMm73gvTIw';
 
 /* NL West — stable MLB team IDs + abbreviations */
 const NL_WEST = [
@@ -923,8 +979,11 @@ const PROMOS = [
 /* ── DOM cache ────────────────────────────────────────────────── */
 const $ = {
   headerDate:    document.getElementById('headerDate'),
-  grid:          document.getElementById('grid'),
-  matchupLine:   document.getElementById('matchupLine'),
+  grid:             document.getElementById('grid'),
+  matchupLine:      document.getElementById('matchupLine'),
+  highlightsSection: document.getElementById('highlightsSection'),
+  highlightsBtn:    document.getElementById('highlightsBtn'),
+  highlightsContent: document.getElementById('highlightsContent'),
   get standingsBody() { return document.getElementById('standingsBody'); },
   gamePanel:     document.getElementById('gamePanel'),
   get nlwestPanel()   { return document.getElementById('nlwestPanel'); },
@@ -1697,6 +1756,33 @@ window.addEventListener('resize', () => {
   _resizeTimer = setTimeout(lockPanelHeights, 150);
 });
 
+/* ── Highlights ───────────────────────────────────────────────── */
+function renderHighlightsButton(oppName) {
+  $.highlightsSection.style.display = '';
+  $.highlightsBtn.style.display = '';
+  $.highlightsContent.innerHTML = '';
+  $.highlightsBtn.onclick = () => loadHighlights(oppName);
+}
+
+async function loadHighlights(oppName) {
+  $.highlightsBtn.style.display = 'none';
+  $.highlightsContent.innerHTML = '<div class="highlights-status">Loading highlights...</div>';
+  const q = encodeURIComponent(`Padres ${oppName} Highlights`);
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&maxResults=1&key=${YT_API_KEY}`;
+  try {
+    const data = await fetchJSON(url);
+    const videoId = data.items?.[0]?.id?.videoId;
+    if (!videoId) {
+      $.highlightsContent.innerHTML = '<div class="highlights-status">Highlights not posted yet — check back later.</div>';
+      return;
+    }
+    $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+  } catch (e) {
+    console.error('Highlights fetch failed:', e);
+    $.highlightsContent.innerHTML = `<div class="highlights-status">Could not load highlights. (${e.message})</div>`;
+  }
+}
+
 /* ── Render orchestration ─────────────────────────────────────── */
 async function renderPromos() {
   $.headerDate.textContent = formatDisplayDate(getLocalDateStr(0));
@@ -1713,6 +1799,7 @@ async function renderPromos() {
   if (!game) {
     renderAllCards(() => ({ status: 'nogame' }));
     $.matchupLine.textContent = '';
+    $.highlightsSection.style.display = 'none';
     return;
   }
 
@@ -1741,6 +1828,8 @@ async function renderPromos() {
   $.matchupLine.innerHTML = isLive
     ? `<span class="matchup-live">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayR} — ${homeR} ${homeLabel}`
     : `${awayLabel} ${awayR} — ${homeR} ${homeLabel}`;
+
+  if (!isLive) renderHighlightsButton(oppName);
 }
 
 async function init() {
