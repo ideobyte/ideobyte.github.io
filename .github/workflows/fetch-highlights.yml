@@ -2,8 +2,9 @@ name: Fetch Padres Highlights
 
 on:
   schedule:
-    - cron: '*/30 3-8 * * *'  # Every 30 min, ~9pm-midnight PT
-  workflow_dispatch:           # Allow manual trigger from GitHub UI
+    - cron: '*/30 19-23 * * *'  # noon-7pm PT (19:00-23:59 UTC)
+    - cron: '*/30 0-8 * * *'    # 7pm-midnight PT (00:00-08:00 UTC)
+  workflow_dispatch:             # Allow manual trigger from GitHub UI
 
 jobs:
   fetch-highlights:
