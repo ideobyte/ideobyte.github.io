@@ -59,7 +59,7 @@ jobs:
           TODAY="${{ steps.date.outputs.today }}"
           OPP="${{ steps.game.outputs.opp }}"
           Q=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "Padres ${OPP} Highlights")
-          RESP=$(curl -s "https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=UCoLrcjPV5PbUrUyXq5mjc_A&q=${Q}&type=video&order=date&maxResults=1&key=${{ secrets.YT_API_KEY }}")
+          RESP=$(curl -s -H "Referer: https://ideo.zip" "https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=UCoLrcjPV5PbUrUyXq5mjc_A&q=${Q}&type=video&order=date&maxResults=1&key=${{ secrets.YT_API_KEY }}")
           VIDEO_ID=$(echo "$RESP" | jq -r '.items[0].id.videoId // ""')
           echo "videoId=$VIDEO_ID" >> $GITHUB_OUTPUT
 
