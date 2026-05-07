@@ -759,6 +759,7 @@
     align-items: center;
     animation: fadeUp 0.5s ease 0.3s both;
   }
+  .highlights-btn-row { display: flex; gap: 0.8rem; justify-content: center; }
   .highlights-btn {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 0.8rem;
@@ -781,7 +782,7 @@
     color: var(--cream-muted);
     margin-top: 0.6rem;
   }
-  #highlightsContent, #highlightsYesterdayContent { width: 100%; }
+  #highlightsContent { width: 100%; }
   .highlights-embed-wrap {
     width: 100%;
     aspect-ratio: 16 / 9;
@@ -849,7 +850,10 @@
 </div>
 
 <div class="highlights-section" id="highlightsSection" style="display:none">
-  <button class="highlights-btn" id="highlightsBtn">&#9654; Highlights from Today's Game</button>
+  <div class="highlights-btn-row">
+    <button class="highlights-btn" id="highlightsBtn" style="display:none">&#9654; Highlights from Today's Game</button>
+    <button class="highlights-btn" id="highlightsYesterdayBtn" style="display:none">&#9654; Highlights from Yesterday's Game</button>
+  </div>
   <div id="highlightsContent"></div>
 </div>
 
@@ -857,10 +861,6 @@
 
 <div class="grid" id="grid"></div>
 <div class="matchup-line" id="matchupLine"></div>
-<div class="highlights-section" id="highlightsYesterdaySection" style="display:none">
-  <button class="highlights-btn" id="highlightsYesterdayBtn">&#9654; Highlights from Yesterday's Game</button>
-  <div id="highlightsYesterdayContent"></div>
-</div>
 
 <script>
 'use strict';
@@ -987,12 +987,10 @@ const $ = {
   headerDate:    document.getElementById('headerDate'),
   grid:             document.getElementById('grid'),
   matchupLine:      document.getElementById('matchupLine'),
-  highlightsSection:         document.getElementById('highlightsSection'),
-  highlightsBtn:             document.getElementById('highlightsBtn'),
-  highlightsContent:         document.getElementById('highlightsContent'),
-  highlightsYesterdaySection: document.getElementById('highlightsYesterdaySection'),
-  highlightsYesterdayBtn:    document.getElementById('highlightsYesterdayBtn'),
-  highlightsYesterdayContent: document.getElementById('highlightsYesterdayContent'),
+  highlightsSection:    document.getElementById('highlightsSection'),
+  highlightsBtn:        document.getElementById('highlightsBtn'),
+  highlightsYesterdayBtn: document.getElementById('highlightsYesterdayBtn'),
+  highlightsContent:    document.getElementById('highlightsContent'),
   get standingsBody() { return document.getElementById('standingsBody'); },
   gamePanel:     document.getElementById('gamePanel'),
   get nlwestPanel()   { return document.getElementById('nlwestPanel'); },
@@ -1797,32 +1795,42 @@ function _lsSet(key, dateStr, videoId) {
 }
 
 /* ── Today's highlights ──────────────────────────────────────── */
-let _cachedHighlightVideoId = _lsGet('padres_highlights', getLocalDateStr(0));
+let _cachedHighlightVideoId  = _lsGet('padres_highlights', getLocalDateStr(0));
+let _cachedYesterdayVideoId  = _lsGet('padres_highlights_yesterday', getLocalDateStr(-1));
+let _highlightsActive        = null; // 'today' | 'yesterday' | null
+
+function _resetHighlightsBtns(todayLabel, yestLabel) {
+  $.highlightsSection.style.display = '';
+  if (todayLabel !== null) { $.highlightsBtn.textContent = todayLabel; $.highlightsBtn.style.display = ''; }
+  if (yestLabel  !== null) { $.highlightsYesterdayBtn.textContent = yestLabel; $.highlightsYesterdayBtn.style.display = ''; }
+}
+
+async function _closeHighlights() {
+  if (!_highlightsActive) return;
+  await slideUp($.highlightsContent);
+  $.highlightsContent.innerHTML = '';
+  _highlightsActive = null;
+}
 
 function renderHighlightsButton(oppName) {
-  $.highlightsSection.style.display = '';
-  $.highlightsBtn.textContent = '▶ Highlights from Today\'s Game';
-  $.highlightsBtn.style.display = '';
-  $.highlightsContent.innerHTML = '';
+  _resetHighlightsBtns('▶ Highlights from Today\'s Game', null);
   $.highlightsBtn.onclick = () => loadHighlights(oppName);
 }
 
 async function loadHighlights(oppName) {
+  if (_highlightsActive === 'today') { await _closeHighlights(); renderHighlightsButton(oppName); return; }
+  if (_highlightsActive === 'yesterday') { $.highlightsContent.innerHTML = ''; _highlightsActive = null; }
   $.highlightsBtn.style.display = 'none';
   try {
     if (!_cachedHighlightVideoId) {
       try {
         const cache = await fetchJSON('/padres/highlights.json');
-        if (cache.date === getLocalDateStr(0) && cache.videoId) {
-          _cachedHighlightVideoId = cache.videoId;
-          _lsSet('padres_highlights', getLocalDateStr(0), _cachedHighlightVideoId);
-        }
+        if (cache.date === getLocalDateStr(0) && cache.videoId) { _cachedHighlightVideoId = cache.videoId; _lsSet('padres_highlights', getLocalDateStr(0), _cachedHighlightVideoId); }
       } catch {}
     }
     if (!_cachedHighlightVideoId) {
       const q = encodeURIComponent(`Padres ${oppName} Highlights`);
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&maxResults=1&key=${YT_API_KEY}`;
-      const data = await fetchJSON(url);
+      const data = await fetchJSON(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&maxResults=1&key=${YT_API_KEY}`);
       _cachedHighlightVideoId = data.items?.[0]?.id?.videoId ?? '';
       if (_cachedHighlightVideoId) _lsSet('padres_highlights', getLocalDateStr(0), _cachedHighlightVideoId);
     }
@@ -1833,9 +1841,9 @@ async function loadHighlights(oppName) {
     }
     $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${_cachedHighlightVideoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
     slideDown($.highlightsContent);
-    $.highlightsBtn.textContent = '✕ Close Highlights';
-    $.highlightsBtn.style.display = '';
-    $.highlightsBtn.onclick = async () => { $.highlightsBtn.style.display = 'none'; await slideUp($.highlightsContent); renderHighlightsButton(oppName); };
+    _highlightsActive = 'today';
+    $.highlightsBtn.textContent = '✕ Close Highlights'; $.highlightsBtn.style.display = '';
+    $.highlightsBtn.onclick = () => loadHighlights(oppName);
   } catch (e) {
     console.error('Highlights fetch failed:', e);
     $.highlightsBtn.style.display = '';
@@ -1844,52 +1852,45 @@ async function loadHighlights(oppName) {
 }
 
 /* ── Yesterday's highlights ──────────────────────────────────── */
-let _cachedYesterdayVideoId = _lsGet('padres_highlights_yesterday', getLocalDateStr(-1));
-
 function renderYesterdayHighlightsButton(oppName) {
-  $.highlightsYesterdaySection.style.display = '';
-  $.highlightsYesterdayBtn.textContent = '▶ Highlights from Yesterday\'s Game';
-  $.highlightsYesterdayBtn.style.display = '';
-  $.highlightsYesterdayContent.innerHTML = '';
+  _resetHighlightsBtns(null, '▶ Highlights from Yesterday\'s Game');
   $.highlightsYesterdayBtn.onclick = () => loadYesterdayHighlights(oppName);
 }
 
 async function loadYesterdayHighlights(oppName) {
+  if (_highlightsActive === 'yesterday') { await _closeHighlights(); renderYesterdayHighlightsButton(oppName); return; }
+  if (_highlightsActive === 'today') { $.highlightsContent.innerHTML = ''; _highlightsActive = null; }
   $.highlightsYesterdayBtn.style.display = 'none';
   const yesterdayPT = getLocalDateStr(-1);
   try {
     if (!_cachedYesterdayVideoId) {
       try {
         const cache = await fetchJSON('/padres/highlights-yesterday.json');
-        if (cache.date === yesterdayPT && cache.videoId) {
-          _cachedYesterdayVideoId = cache.videoId;
-          _lsSet('padres_highlights_yesterday', yesterdayPT, _cachedYesterdayVideoId);
-        }
+        if (cache.date === yesterdayPT && cache.videoId) { _cachedYesterdayVideoId = cache.videoId; _lsSet('padres_highlights_yesterday', yesterdayPT, _cachedYesterdayVideoId); }
       } catch {}
     }
     if (!_cachedYesterdayVideoId) {
-      const publishedAfter = encodeURIComponent(`${yesterdayPT}T08:00:00Z`);
-      const publishedBefore = encodeURIComponent(`${getLocalDateStr(0)}T08:00:00Z`);
-      const q = encodeURIComponent(`Padres ${oppName} Highlights`);
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&publishedAfter=${publishedAfter}&publishedBefore=${publishedBefore}&maxResults=1&key=${YT_API_KEY}`;
-      const data = await fetchJSON(url);
+      const pa = encodeURIComponent(`${yesterdayPT}T08:00:00Z`);
+      const pb = encodeURIComponent(`${getLocalDateStr(0)}T08:00:00Z`);
+      const q  = encodeURIComponent(`Padres ${oppName} Highlights`);
+      const data = await fetchJSON(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&publishedAfter=${pa}&publishedBefore=${pb}&maxResults=1&key=${YT_API_KEY}`);
       _cachedYesterdayVideoId = data.items?.[0]?.id?.videoId ?? '';
       if (_cachedYesterdayVideoId) _lsSet('padres_highlights_yesterday', yesterdayPT, _cachedYesterdayVideoId);
     }
     if (!_cachedYesterdayVideoId) {
       $.highlightsYesterdayBtn.style.display = '';
-      $.highlightsYesterdayContent.innerHTML = '<div class="highlights-status">Highlights not available.</div>';
+      $.highlightsContent.innerHTML = '<div class="highlights-status">Highlights not available.</div>';
       return;
     }
-    $.highlightsYesterdayContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${_cachedYesterdayVideoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-    slideDown($.highlightsYesterdayContent);
-    $.highlightsYesterdayBtn.textContent = '✕ Close Highlights';
-    $.highlightsYesterdayBtn.style.display = '';
-    $.highlightsYesterdayBtn.onclick = async () => { $.highlightsYesterdayBtn.style.display = 'none'; await slideUp($.highlightsYesterdayContent); renderYesterdayHighlightsButton(oppName); };
+    $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${_cachedYesterdayVideoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    slideDown($.highlightsContent);
+    _highlightsActive = 'yesterday';
+    $.highlightsYesterdayBtn.textContent = '✕ Close Highlights'; $.highlightsYesterdayBtn.style.display = '';
+    $.highlightsYesterdayBtn.onclick = () => loadYesterdayHighlights(oppName);
   } catch (e) {
     console.error('Yesterday highlights fetch failed:', e);
     $.highlightsYesterdayBtn.style.display = '';
-    $.highlightsYesterdayContent.innerHTML = `<div class="highlights-status">Could not load highlights. (${e.message})</div>`;
+    $.highlightsContent.innerHTML = `<div class="highlights-status">Could not load highlights. (${e.message})</div>`;
   }
 }
 
