@@ -752,10 +752,12 @@
     max-width: 73.33rem;
     position: relative;
     z-index: 1;
-    margin-top: 1.2rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1.2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
+    animation: fadeUp 0.5s ease 0.3s both;
   }
   .highlights-btn {
     font-family: 'Bebas Neue', sans-serif;
@@ -846,14 +848,15 @@
   </div>
 </div>
 
+<div class="highlights-section" id="highlightsSection" style="display:none">
+  <button class="highlights-btn" id="highlightsBtn">&#9654; Highlights from Today's Game</button>
+  <div id="highlightsContent"></div>
+</div>
+
 <div class="promo-heading">Yesterday's Promo Results</div>
 
 <div class="grid" id="grid"></div>
 <div class="matchup-line" id="matchupLine"></div>
-<div class="highlights-section" id="highlightsSection" style="display:none">
-  <button class="highlights-btn" id="highlightsBtn">&#9654; Watch Highlights</button>
-  <div id="highlightsContent"></div>
-</div>
 
 <script>
 'use strict';
@@ -1758,7 +1761,7 @@ window.addEventListener('resize', () => {
 /* ── Highlights ───────────────────────────────────────────────── */
 function renderHighlightsButton(oppName) {
   $.highlightsSection.style.display = '';
-  $.highlightsBtn.textContent = '▶ Watch Highlights';
+  $.highlightsBtn.textContent = '▶ Highlights from Today\'s Game';
   $.highlightsBtn.style.display = '';
   $.highlightsContent.innerHTML = '';
   $.highlightsBtn.onclick = () => loadHighlights(oppName);
@@ -1767,8 +1770,10 @@ function renderHighlightsButton(oppName) {
 async function loadHighlights(oppName) {
   $.highlightsBtn.style.display = 'none';
   $.highlightsContent.innerHTML = '<div class="highlights-status">Loading highlights...</div>';
+  const todayPT = getLocalDateStr(0);
+  const publishedAfter = encodeURIComponent(`${todayPT}T08:00:00Z`);
   const q = encodeURIComponent(`Padres ${oppName} Highlights`);
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&maxResults=1&key=${YT_API_KEY}`;
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${MLB_YT_CHANNEL}&q=${q}&type=video&order=date&publishedAfter=${publishedAfter}&maxResults=1&key=${YT_API_KEY}`;
   try {
     const data = await fetchJSON(url);
     const videoId = data.items?.[0]?.id?.videoId;
@@ -1777,7 +1782,22 @@ async function loadHighlights(oppName) {
       $.highlightsContent.innerHTML = '<div class="highlights-status">Highlights not posted yet — check back later.</div>';
       return;
     }
-    $.highlightsContent.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    const c = $.highlightsContent;
+    c.innerHTML = `<div class="highlights-embed-wrap"><iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    c.style.overflow   = 'hidden';
+    c.style.transition = 'none';
+    c.style.height     = '0px';
+    c.getBoundingClientRect();
+    const targetH = c.scrollHeight;
+    c.style.transition = 'height 380ms ease';
+    c.style.height     = targetH + 'px';
+    const cleanup = () => { c.style.transition = ''; c.style.height = ''; c.style.overflow = ''; };
+    c.addEventListener('transitionend', function h(e) {
+      if (e.propertyName !== 'height') return;
+      c.removeEventListener('transitionend', h);
+      cleanup();
+    });
+    setTimeout(cleanup, 480);
     $.highlightsBtn.textContent = '✕ Close Highlights';
     $.highlightsBtn.style.display = '';
     $.highlightsBtn.onclick = () => renderHighlightsButton(oppName);
@@ -1786,6 +1806,17 @@ async function loadHighlights(oppName) {
     $.highlightsBtn.style.display = '';
     $.highlightsContent.innerHTML = `<div class="highlights-status">Could not load highlights. (${e.message})</div>`;
   }
+}
+
+async function renderTodayHighlights() {
+  const todayStr = getLocalDateStr(0);
+  const sched = await fetchJSON(`${STATS_API}/schedule?sportId=1&date=${todayStr}&teamId=${PADRES_ID}&gameType=R`).catch(() => null);
+  const game = sched?.dates?.[0]?.games?.[0];
+  if (!game) return;
+  const homeId = game.teams.home.team.id;
+  const oppSide = homeId === PADRES_ID ? 'away' : 'home';
+  const oppName = game.teams[oppSide].team.name;
+  renderHighlightsButton(oppName);
 }
 
 /* ── Render orchestration ─────────────────────────────────────── */
@@ -1804,7 +1835,6 @@ async function renderPromos() {
   if (!game) {
     renderAllCards(() => ({ status: 'nogame' }));
     $.matchupLine.textContent = '';
-    $.highlightsSection.style.display = 'none';
     return;
   }
 
@@ -1834,7 +1864,6 @@ async function renderPromos() {
     ? `<span class="matchup-live">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayR} — ${homeR} ${homeLabel}`
     : `${awayLabel} ${awayR} — ${homeR} ${homeLabel}`;
 
-  if (!isLive) renderHighlightsButton(oppName);
 }
 
 async function init() {
@@ -1850,6 +1879,8 @@ async function init() {
   });
 
   await Promise.all([promosTask, standingsTask, gameTask]);
+
+  renderTodayHighlights().catch(() => {});
 
   /* After both panels load, lock both to standingsPanel height */
   requestAnimationFrame(lockPanelHeights);
