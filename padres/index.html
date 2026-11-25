@@ -621,6 +621,23 @@
     .standings-table th, .standings-table td { padding-left: 0.25rem; padding-right: 0.25rem; }
     .game-scoreline { font-size: 0.6rem; }
   }
+  /* Narrowest side-by-side panels: all eight columns, unlike on phones. */
+  @media (min-width: 601px) {
+    @container (max-width: 390px) {
+      .standings-table th, .standings-table td { padding-left: 0.15rem; padding-right: 0.15rem; }
+    }
+    @container (max-width: 350px) {
+      .standings-table th { font-size: 0.38rem; }
+      .record    { font-size: 0.58rem; }
+      .pct, .gb  { font-size: 0.52rem; }
+      .game-sub  { font-size: 0.42rem; }
+      .game-time { font-size: 0.48rem; letter-spacing: 0; }
+    }
+  }
+  /* "Postponed" is the widest word in the table. */
+  @container (max-width: 272px) {
+    .game-off { font-size: 0.42rem; letter-spacing: 0; }
+  }
 
   /* ── Team Stats Panel ──────────────────────────────────────── */
   .stats-header {
