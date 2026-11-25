@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="/data/favicon/padres/favicon-96x96.png" sizes="96x96">
-<link rel="icon" type="image/svg+xml" href="/data/favicon/padres/favicon.svg">
 <link rel="shortcut icon" href="/data/favicon/padres/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/data/favicon/padres/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="ideo.zip">
@@ -13,19 +12,47 @@
 
 <!-- Preconnect to the API host so the first fetch isn't paying for DNS+TLS handshake -->
 <link rel="preconnect" href="https://statsapi.mlb.com" crossorigin>
-<!-- Preconnect for Google Fonts (font CSS + actual font files are on different hosts) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@800&family=IBM+Plex+Mono:wght@400;700&display=swap">
 
 <style>
   @font-face {
     font-family: 'RTDyansBasic';
-    src: url('/fonts/RTDyansBasic.ttf') format('truetype');
+    src: url('/fonts/RTDyansBasic-ascii.woff2') format('woff2'); /* printable ASCII only */
     font-weight: normal;
     font-style: normal;
     font-display: swap;
+  }
+  /* Latin subsets from Google Fonts; licences are next to the files */
+  @font-face {
+    font-family: 'Barlow Condensed';
+    src: url('/fonts/BarlowCondensed-800-latin.woff2') format('woff2');
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'Bebas Neue';
+    src: url('/fonts/BebasNeue-latin.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Mono';
+    src: url('/fonts/IBMPlexMono-400-latin.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Mono';
+    src: url('/fonts/IBMPlexMono-700-latin.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
   }
 
   :root {
@@ -34,10 +61,13 @@
     --gold: #C8922A;
     --gold-bright: #E8B84B;
     --gold-pale: #F5D98A;
+    --gold-muted: rgba(232,184,75,0.8); /* small tags; dimmer is unreadable on the panels */
     --cream: #F5EDD8;
-    --cream-muted: rgba(245,237,216,0.5);
+    --cream-muted: rgba(245,237,216,0.65);
     --yes: #7EB648;
+    --yes-text: #84BC4F; /* --yes is just too dark for text on its own tint */
     --no: #C0392B;
+    --no-text: #EF8F80; /* --no is too dark for text on the panels */
     --live: #E8B84B;
     --gold-line-strong: rgba(200,146,42,0.3);
     --gold-line-mid:    rgba(200,146,42,0.25);
@@ -48,6 +78,7 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { font-size: 150%; }
+  :focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
 
   body {
     background: var(--brown);
@@ -257,8 +288,17 @@
   .standings-table td:last-child { border-right: none; }
   .standings-table td.num { text-align: center; }
 
-  .rank-num       { font-family: 'Bebas Neue', sans-serif; font-size: 0.6rem; color: var(--cream-muted); width: 1.2rem; text-align: center; }
-  .team-name-cell { display: flex; align-items: center; gap: 0.5rem; }
+  .team-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
   .team-abbr      { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 0.05rem; color: var(--cream); min-width: 2.2rem; }
   .team-abbr.padres { color: var(--gold-bright); }
   .team-full { font-size: 0.62rem; color: var(--cream); letter-spacing: 0.03rem; white-space: nowrap; }
@@ -283,16 +323,16 @@
 
   /* Score line: ABB R – R ABB */
   .game-scoreline { font-family: 'Bebas Neue', sans-serif; font-size: 0.72rem; color: var(--gold-bright); letter-spacing: 0.06rem; }
-  .game-scoreline.final-w { color: var(--yes); }
-  .game-scoreline.final-l { color: var(--no); }
   /* Replaces inline style="color:..." per cell */
   .score-team-won  { color: var(--cream); }
-  .score-team-lost { color: var(--no); }
+  .score-team-lost { color: var(--no-text); }
   .score-dash      { color: var(--cream-muted); }
 
   .game-sub  { font-size: 0.5rem;  color: rgba(245,237,216,0.75); letter-spacing: 0.04rem; margin-top: 0.1rem; }
   .game-time { font-size: 0.56rem; color: var(--cream); letter-spacing: 0.04rem; }
-  .no-game   { font-size: 0.38rem; color: rgba(245,237,216,0.25); letter-spacing: 0.04rem; }
+  .no-game   { font-size: 0.38rem; color: rgba(245,237,216,0.6); letter-spacing: 0.04rem; }
+  .game-off  { color: rgba(245,237,216,0.6); }
+  .game-entry + .game-entry { margin-top: 0.25rem; }
 
   /* ── Promo cards ───────────────────────────────────────────── */
   .card {
@@ -333,8 +373,8 @@
   .result-stat-label  { font-size: 0.4rem; letter-spacing: 0.2rem; color: var(--cream-muted); text-transform: uppercase; }
   .result-game-label  { font-family: 'Bebas Neue', sans-serif; font-size: 1.65rem; line-height: 1; color: var(--gold-bright); word-break: break-word; }
   .result-verdict     { font-family: 'Bebas Neue', sans-serif; font-size: 0.88rem; letter-spacing: 0.09rem; line-height: 1; }
-  .result-verdict.yes    { color: var(--yes); }
-  .result-verdict.no     { color: var(--no); }
+  .result-verdict.yes    { color: var(--yes-text); }
+  .result-verdict.no     { color: var(--no-text); }
   .result-verdict.live   { color: var(--live); font-size: 0.65rem; }
   .result-verdict.nogame { color: var(--gold-pale); font-size: 0.53rem; }
   .result-verdict .live-dot {
@@ -380,13 +420,6 @@
   .gp-mid   { align-items: center; padding: 0 0.6rem; }
   .gp-right { border-left:  1px solid var(--gold-line-soft); padding-left:  0.7rem; text-align: right; }
 
-  .gp-team-header { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.08rem; line-height: 1; margin-bottom: 0.35rem; }
-  .gp-team-header.padres { color: var(--gold-bright); }
-  .gp-team-header.opp    { color: var(--cream); }
-  .gp-team-score   { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; line-height: 1; color: var(--cream); }
-  .gp-team-topline { display: flex; align-items: baseline; gap: 0.45rem; margin-bottom: 0.35rem; }
-  .gp-right .gp-team-topline { justify-content: flex-end; }
-
   .gp-lineup { list-style: none; flex: 0; }
   .gp-lineup li {
     font-size: 0.6rem;
@@ -397,16 +430,15 @@
     text-overflow: ellipsis;
   }
   .gp-lineup li.current-batter { color: var(--gold-bright); font-weight: 700; }
-  .gp-lineup li .order-num { color: rgba(200,146,42,0.5); font-size: 0.45rem; margin-right: 0.2rem; }
+  .gp-lineup li .order-num { color: var(--gold-muted); font-size: 0.45rem; margin-right: 0.2rem; }
   .gp-right .gp-lineup li .order-num { margin-right: 0; margin-left: 0.2rem; }
-  .gp-lineup li .pos-tag { font-size: 0.4rem; color: rgba(200,146,42,0.55); margin-left: 0.2rem; }
+  .gp-lineup li .pos-tag { font-size: 0.4rem; color: var(--gold-muted); margin-left: 0.2rem; }
   .gp-lineup li .sub-mark { font-size: 0.38rem; color: var(--yes); margin-left: 0.15rem; vertical-align: super; }
-  .pos-tag { font-family: 'IBM Plex Mono', monospace; font-size: 0.4rem; color: rgba(200,146,42,0.55); }
+  .pos-tag { font-family: 'IBM Plex Mono', monospace; font-size: 0.4rem; color: var(--gold-muted); }
 
   .gp-inning-block { text-align: center; margin-bottom: 0.3rem; }
-  .gp-half-arrow   { font-size: 0.55rem; color: var(--gold-bright); line-height: 1; }
   .gp-inning-num   { font-family: 'Bebas Neue', sans-serif; font-size: 1.0rem; color: var(--cream); line-height: 1; letter-spacing: 0.05rem; }
-  .gp-inning-word  { font-size: 0.33rem; letter-spacing: 0.18rem; color: var(--cream-muted); text-transform: uppercase; }
+  .gp-inning-word  { font-size: 0.38rem; letter-spacing: 0.18rem; color: var(--cream-muted); text-transform: uppercase; }
 
   .gp-live-badge,
   .gp-warmup-badge {
@@ -421,8 +453,6 @@
   .gp-live-badge   { color: var(--gold-bright); }
   .gp-warmup-badge { color: var(--cream-muted); }
 
-  .gp-divider { height: 1px; background: var(--gold-line-soft); margin: 0.2rem 0; width: 100%; }
-
   .gp-diamond { flex-shrink: 0; margin: 0; }
   .gp-diamond svg { display: block; }
 
@@ -434,7 +464,7 @@
     margin-top: -0.9rem;
     margin-bottom: 0.35rem;
   }
-  .gp-outs-label { font-size: 0.33rem; letter-spacing: 0.18rem; color: var(--cream-muted); text-transform: uppercase; padding-left: 0.3rem; }
+  .gp-outs-label { font-size: 0.38rem; letter-spacing: 0.18rem; color: var(--cream-muted); text-transform: uppercase; padding-left: 0.3rem; }
   .outs-pips { display: flex; gap: 0.25rem; }
   .out-pip {
     width: 0.55rem;
@@ -500,7 +530,7 @@
   .gp-pitcher-name .pos-tag {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.4rem;
-    color: rgba(200,146,42,0.55);
+    color: var(--gold-muted);
     margin-left: 0.2rem;
   }
   .gp-right .gp-pitcher-name .pos-tag { margin-left: 0; margin-right: 0.2rem; }
@@ -532,7 +562,7 @@
     border-radius: 3px;
   }
   .streak-w { color: var(--yes); }
-  .streak-l { color: var(--no); }
+  .streak-l { color: var(--no-text); }
   .gp-loading {
     font-size: 0.44rem;
     letter-spacing: 0.2rem;
@@ -543,9 +573,9 @@
   }
 
   /* Inline cell error styling (replaces inline style attributes) */
-  .cell-error    { text-align: center; padding: 1rem; color: var(--no); font-size: 0.44rem; }
+  .cell-error    { text-align: center; padding: 1rem; color: var(--no-text); font-size: 0.44rem; }
   .cell-loading  { text-align: center; padding: 1rem; color: var(--cream-muted); font-size: 0.44rem; }
-  .panel-error   { text-align: center; padding: 0.8rem; color: var(--no); font-size: 0.4rem; }
+  .panel-error   { text-align: center; padding: 0.8rem; color: var(--no-text); font-size: 0.4rem; }
 
   /* Phone/narrow layout */
   @media (max-width: 700px), (pointer: coarse) and (max-width: 1024px) {
@@ -560,12 +590,11 @@
     .team-full { display: none; }
     .standings-table th.hide-mobile,
     .standings-table td.hide-mobile { display: none; }
-    .standings-table th { font-size: 0.32rem; padding: 0.5rem 0.4rem; }
+    .standings-table th { font-size: 0.38rem; padding: 0.5rem 0.4rem; }
     .standings-table td { padding: 0.45rem 0.4rem; }
     .team-abbr { font-size: 0.75rem; min-width: unset; }
     .team-name-cell { gap: 0; }
     .team-th { width: auto !important; }
-    .rank-num  { font-size: 0.5rem; }
     .record    { font-size: 0.58rem; }
     .pct       { font-size: 0.52rem; }
     .gb        { font-size: 0.52rem; }
@@ -676,9 +705,18 @@
     user-select: none;
   }
   .stats-table th:first-child { text-align: left; }
+  .stats-table th button {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: inherit;
+  }
   .stats-table th:hover { color: var(--gold-bright); }
-  .stats-table th.sort-asc::after  { content: ' ▲'; font-size: 0.3rem; }
-  .stats-table th.sort-desc::after { content: ' ▼'; font-size: 0.3rem; }
+  .stats-table th.sort-asc::after  { content: ' ▲'; font-size: 0.36rem; }
+  .stats-table th.sort-desc::after { content: ' ▼'; font-size: 0.36rem; }
 
   .stats-table tbody tr { border-bottom: 1px solid rgba(200,146,42,0.08); transition: background 0.12s; }
   .stats-table tbody tr:last-child { border-bottom: none; }
@@ -691,11 +729,9 @@
     white-space: nowrap;
   }
   .stats-table td:first-child { text-align: left; color: var(--cream); font-weight: 700; }
-  .stats-table .stat-pos { font-size: 0.32rem; color: rgba(200,146,42,0.55); margin-left: 0.2rem; }
+  .stats-table .stat-pos { font-size: 0.38rem; color: var(--gold-muted); margin-left: 0.2rem; }
   .stats-table .stat-num { font-family: 'IBM Plex Mono', monospace; }
   .stats-loading { text-align: center; padding: 1rem; color: var(--cream-muted); font-size: 0.44rem; }
-
-  .stats-table-wrap.fading { opacity: 0; }
 
   /* ── Last Game tables — same font as season stats, tighter horizontal padding ── */
   #lgTeamContent .stats-table {
@@ -704,6 +740,7 @@
   }
   #lgTeamContent .stats-table th {
     padding: 0.25rem 0.04rem;
+    cursor: default; /* not sortable */
   }
   #lgTeamContent .stats-table td {
     padding: 0.18rem 0.04rem;
@@ -759,7 +796,7 @@
     margin-bottom: 0.2rem;
   }
   .lg-section-label {
-    font-size: 0.32rem;
+    font-size: 0.38rem;
     letter-spacing: 0.18rem;
     color: var(--cream-muted);
     text-transform: uppercase;
@@ -822,6 +859,16 @@
   }
   @media (max-width: 600px) {
     .highlights-btn { font-size: 0.65rem; letter-spacing: 0.08rem; padding: 0.4rem 0.8rem; max-width: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* the overlay stays a slow fade: its removal is timed to it */
+    *:not(#wilmyers-overlay), *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
 </style>
@@ -901,7 +948,7 @@ const PREGAME_WINDOW_MS = 30 * 60_000;  /* how long before first pitch counts as
 const IDLE_POLL_MS = 5 * 60_000;        /* nothing happening soon */
 const FETCH_TIMEOUT_MS = 20_000;
 const STANDINGS_POLL_MS = 30_000;
-const SEASON = 2026;
+const LATE_GAME_MS = 12 * 60 * 60_000;  /* a game that started this recently may have only just ended */
 /* Regular season + Wild Card, Division Series, LCS, World Series */
 const GAME_TYPES = 'R,F,D,L,W';
 /* Reddit blocks cross-origin API calls, so link to its search instead. */
@@ -915,9 +962,9 @@ const NL_WEST = [
   { id: 137, abbr: 'SF',  name: 'San Francisco Giants' },
   { id: 115, abbr: 'COL', name: 'Colorado Rockies'     },
 ];
-const NL_WEST_IDS = new Set(NL_WEST.map(t => t.id));
+const NL_WEST_IDS = NL_WEST.map(t => t.id);
 
-/* Master ID → abbreviation map for non-NL-West teams (NL West come from NL_WEST). */
+/* Team ID → abbreviation (schedule responses don't include abbreviations). */
 const ID_TO_ABBR = {
   108: 'LAA', 109: 'AZ',  110: 'BAL', 111: 'BOS', 112: 'CHC',
   113: 'CIN', 114: 'CLE', 115: 'COL', 116: 'DET', 117: 'HOU',
@@ -933,26 +980,8 @@ const CORNERS_HTML = '<div class="corner tl"></div><div class="corner tr"></div>
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const NAME_SUFFIXES = new Set(['jr.', 'sr.', 'ii', 'iii', 'iv', 'v']);
 
-/* Standings table markup (used both as initial render and when restoring
-   after the stats panel closes). */
-const STANDINGS_TABLE_HTML = `
-  <table class="standings-table">
-    <thead>
-      <tr>
-        <th class="team-th" style="width:35%">Team</th>
-        <th class="num">W</th>
-        <th class="num">L</th>
-        <th class="num">PCT</th>
-        <th class="num hide-mobile">GB</th>
-        <th class="num">L10</th>
-        <th class="num hide-mobile">STK</th>
-        <th class="next-game-cell next-game-th">Today's Game</th>
-      </tr>
-    </thead>
-    <tbody id="standingsBody">
-      <tr><td colspan="8" class="cell-loading">Loading standings...</td></tr>
-    </tbody>
-  </table>`;
+/* Captured before any data goes in, to restore it after the stats panel closes. */
+const STANDINGS_TABLE_HTML = document.querySelector('.standings-table').outerHTML;
 
 /* ── Promo definitions ────────────────────────────────────────── */
 const PROMOS = [
@@ -1029,28 +1058,6 @@ const $ = {
 };
 
 /* ── Helpers ──────────────────────────────────────────────────── */
-function getPTOffset() {
-  /* Pacific Time offset from UTC in hours (8 = PST, 7 = PDT).
-     DST: 2nd Sunday of March 02:00 PT → 1st Sunday of November 02:00 PT. */
-  const now = new Date();
-  function nthSundayUTC(year, month, n) {
-    const d = new Date(Date.UTC(year, month - 1, 1));
-    let sundays = 0;
-    while (sundays < n) {
-      if (d.getUTCDay() === 0) sundays++;
-      if (sundays < n) d.setUTCDate(d.getUTCDate() + 1);
-    }
-    return d;
-  }
-  const year = now.getUTCFullYear();
-  const dstStart = nthSundayUTC(year, 3, 2);  // 2nd Sun March, 02:00 PT = 10:00 UTC
-  const dstEnd   = nthSundayUTC(year, 11, 1); // 1st Sun November, 02:00 PT = 09:00 UTC
-  dstStart.setUTCHours(10);
-  dstEnd.setUTCHours(9);
-  const isPDT = now >= dstStart && now < dstEnd;
-  return isPDT ? 7 : 8;
-}
-
 const _ptDateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' });
 
 function getLocalDateStr(offset = 0) {
@@ -1072,6 +1079,12 @@ function lastName(fullName) {
   return parts[parts.length - 1];
 }
 
+function formatGameTime(g) {
+  return g.status.startTimeTBD
+    ? 'Time TBD'
+    : new Date(g.gameDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+}
+
 const ordinalSuffix = n => [, 'st', 'nd', 'rd'][n] || 'th';
 
 async function fetchJSON(url) {
@@ -1091,7 +1104,7 @@ function cardHTML(promo, state) {
   } else if (state.status === 'postseason') {
     resultHTML = '<div class="result-area nogame"><div class="result-verdict nogame">Postseason</div><div class="result-sub">Promos only tracked in the regular season</div></div>';
   } else if (state.status === 'nogame') {
-    resultHTML = '<div class="result-area nogame"><div class="result-verdict nogame">No game</div><div class="result-sub">Padres had the day off</div></div>';
+    resultHTML = `<div class="result-area nogame"><div class="result-verdict nogame">No game</div><div class="result-sub">${state.reason ?? 'Padres had the day off'}</div></div>`;
   } else {
     const achieved = promo.check(state.value, state);
     const cls = state.status === 'live' ? 'live' : (achieved ? 'yes' : 'no');
@@ -1101,13 +1114,13 @@ function cardHTML(promo, state) {
       verdictText = promo.isWinCard
         ? promo.liveMsg(state.value, state.score)
         : (achieved ? 'Yes ✓' : 'In Progress');
-      subText = `<span>${promo.liveMsg ? promo.liveMsg(state.value, state.score) : ''}</span>`;
+      subText = `<span>${promo.liveMsg ? promo.liveMsg(state.value, state.score) : ''}</span>${state.gameNote}`;
       topContent = promo.isWinCard
         ? `<div class="result-game-label">${state.score.padres > state.score.opp ? 'Padres Lead!' : state.score.padres < state.score.opp ? 'Padres Trail' : 'Tied Game'}</div>`
         : `<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
     } else {
       verdictText = achieved ? 'Yes ✓' : 'No ✗';
-      subText = achieved ? '<span>Promo active today!</span>' : '<span>No promo today</span>';
+      subText = achieved ? `<span>Promo active today!</span>${state.gameNote}` : '<span>No promo today</span>';
       topContent = promo.isWinCard
         ? `<div class="result-game-label">${achieved ? 'Padres Won!' : 'Padres Lost :('}</div><div class="result-stat-label">${achieved ? 'Free Fries! 🍟' : 'No Free Fries for You'}</div>`
         : `<div class="result-stat">${state.value}</div><div class="result-stat-label">${state.label}</div>`;
@@ -1124,206 +1137,183 @@ function cardHTML(promo, state) {
   return `<div class="card">${CORNERS_HTML}<div class="card-brand-block"><div class="card-icon">${promo.icon}</div><div class="card-brand">${promo.brand}</div></div><div class="card-trigger-label">Promo triggers on</div><div class="card-trigger">${promo.trigger}</div><div class="card-divider"></div>${resultHTML}<div class="card-reward">${promo.reward}${rewardLink}</div></div>`;
 }
 
+let _cardsHTML = '';
+
 function renderAllCards(stateForPromo) {
-  $.grid.innerHTML = PROMOS.map(p => cardHTML(p, stateForPromo(p))).join('');
+  const html = PROMOS.map(p => cardHTML(p, stateForPromo(p))).join('');
+  if (html === _cardsHTML) return;
+  _cardsHTML = html;
+  /* Redrawing drops keyboard focus, so put it back on the same link. */
+  const focusedLink = [...$.grid.querySelectorAll('a')].indexOf(document.activeElement);
+  $.grid.innerHTML = html;
+  $.grid.querySelectorAll('a')[focusedLink]?.focus({ preventScroll: true });
 }
 
 /* ── Standings ────────────────────────────────────────────────── */
+let _season = null; /* season shown in the standings and stats panels */
+
+/* Win-loss records keyed by team ID. */
+async function fetchRecords(season) {
+  const data = await fetchJSON(`${STATS_API}/standings?leagueId=104&season=${season}&standingsTypes=regularSeason&fields=records,teamRecords,team,id,wins,losses,divisionRank,divisionGamesBack,streak,streakCode,splitRecords,type`);
+  const records = {};
+  for (const tr of (data.records ?? []).flatMap(r => r.teamRecords ?? [])) {
+    const l10 = tr.records?.splitRecords?.find(s => s.type === 'lastTen');
+    records[tr.team.id] = {
+      w: tr.wins,
+      l: tr.losses,
+      rank: Number(tr.divisionRank),
+      gb: parseFloat(tr.divisionGamesBack) || 0, /* "-" for the leader */
+      l10w: l10?.wins ?? '-',
+      l10l: l10?.losses ?? '-',
+      streak: tr.streak?.streakCode ?? '',
+    };
+  }
+  return records;
+}
+
+/* Yesterday's and today's games involving NL West teams, in start order. */
+async function fetchDivisionGames(yesterdayStr, todayStr) {
+  const data = await fetchJSON(`${STATS_API}/schedule?sportId=1&startDate=${yesterdayStr}&endDate=${todayStr}&teamId=${NL_WEST_IDS}&gameType=${GAME_TYPES}&hydrate=linescore&fields=dates,date,games,gamePk,gameDate,rescheduleGameDate,resumeGameDate,status,abstractGameState,detailedState,startTimeTBD,teams,home,away,team,id,score,linescore,currentInning,inningHalf,runs`);
+  const gamesOn = date => (data.dates ?? [])
+    .filter(d => d.date === date)
+    .flatMap(d => d.games ?? [])
+    /* Verify the game actually falls on that day in PT. */
+    .filter(g => _ptDateFmt.format(new Date(g.gameDate)) === date)
+    .sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate));
+  return { yesterday: gamesOn(yesterdayStr), today: gamesOn(todayStr) };
+}
+
+/* Draws the standings and returns yesterday's and today's division games. */
 async function fetchNLWest() {
   const todayStr = getLocalDateStr(0);
+  let season = Number(todayStr.slice(0, 4));
+  let [records, games] = await Promise.all([fetchRecords(season), fetchDivisionGames(getLocalDateStr(-1), todayStr)]);
 
-  const [standData, schedData] = await Promise.all([
-    fetchJSON(`${STATS_API}/standings?leagueId=104&season=${SEASON}&standingsTypes=regularSeason`),
-    fetchJSON(`${STATS_API}/schedule?sportId=1&date=${todayStr}&gameType=${GAME_TYPES}&hydrate=linescore`),
-  ]);
-
-  /* W/L map by team ID */
-  const wlMap = {};
-  for (const record of standData.records || []) {
-    for (const tr of record.teamRecords || []) {
-      const l10 = tr.records?.splitRecords?.find(s => s.type === 'lastTen');
-      wlMap[tr.team.id] = {
-        w: tr.wins,
-        l: tr.losses,
-        l10w: l10?.wins ?? '-',
-        l10l: l10?.losses ?? '-',
-        streak: tr.streak?.streakCode ?? '',
-      };
-    }
+  /* Until Opening Day, keep showing how last season ended. */
+  if (!games.today.length && NL_WEST_IDS.every(id => !records[id]?.w && !records[id]?.l)) {
+    season--;
+    records = await fetchRecords(season);
   }
 
-  /* Build today-game map keyed by NL West team ID, and enrich the abbr
-     map for any team appearing on the schedule, in one pass. */
-  const todayGames = {};
-  for (const dateObj of schedData.dates || []) {
-    if (dateObj.date !== todayStr) continue;
-    for (const g of dateObj.games || []) {
-      const homeId = g.teams?.home?.team?.id;
-      const awayId = g.teams?.away?.team?.id;
-      const hAbbr  = g.teams?.home?.team?.abbreviation;
-      const aAbbr  = g.teams?.away?.team?.abbreviation;
-      if (homeId && hAbbr) ID_TO_ABBR[homeId] = hAbbr;
-      if (awayId && aAbbr) ID_TO_ABBR[awayId] = aAbbr;
+  if (!$.standingsBody) return games; /* stats panel was opened meanwhile */
+  _season = season;
 
-      if (!NL_WEST_IDS.has(homeId) && !NL_WEST_IDS.has(awayId)) continue;
+  const noRecord = { w: 0, l: 0, rank: 99, gb: 0, l10w: '-', l10l: '-', streak: '' };
+  const rows = NL_WEST
+    .map(team => ({ ...team, rec: records[team.id] ?? noRecord }))
+    .sort((a, b) => a.rec.rank - b.rec.rank);
 
-      const startUTC = new Date(g.gameDate);
-
-      /* Verify the game actually falls on today in PT. */
-      if (_ptDateFmt.format(startUTC) !== todayStr) continue;
-
-      /* Postponed/cancelled/suspended games: include in todayGames with a
-         special state so buildGameCell can render PPD + reschedule date. */
-      const detail = (g.status?.detailedState ?? '').toLowerCase();
-      if (detail.includes('postponed') || detail.includes('cancelled') || detail.includes('suspended')) {
-        const reschedRaw = g.rescheduleGameDate ?? null;
-        let reschedLabel = null;
-        if (reschedRaw) {
-          const [, mm, dd] = reschedRaw.split('-');
-          reschedLabel = `${MONTHS[parseInt(mm, 10) - 1]} ${parseInt(dd, 10)}`;
-        }
-        const ppd = { state: 'Postponed', reschedLabel, homeId, awayId,
-          homeAbbr: hAbbr || ID_TO_ABBR[homeId] || '???',
-          awayAbbr: aAbbr || ID_TO_ABBR[awayId] || '???',
-          homeRuns: 0, awayRuns: 0, inning: null, half: null, localTime: '', detailedState: '' };
-        if (NL_WEST_IDS.has(homeId)) todayGames[homeId] = ppd;
-        if (NL_WEST_IDS.has(awayId)) todayGames[awayId] = ppd;
-        continue;
-      }
-
-      const info = {
-        state:         g.status?.abstractGameState,
-        detailedState: g.status?.detailedState ?? '',
-        localTime:     startUTC.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
-        homeId, awayId,
-        homeRuns: g.teams?.home?.score ?? g.linescore?.teams?.home?.runs ?? 0,
-        awayRuns: g.teams?.away?.score ?? g.linescore?.teams?.away?.runs ?? 0,
-        inning:   g.linescore?.currentInning ?? null,
-        half:     g.linescore?.inningHalf ?? null,
-        homeAbbr: hAbbr || ID_TO_ABBR[homeId] || '???',
-        awayAbbr: aAbbr || ID_TO_ABBR[awayId] || '???',
-      };
-      if (NL_WEST_IDS.has(homeId)) todayGames[homeId] = info;
-      if (NL_WEST_IDS.has(awayId)) todayGames[awayId] = info;
-    }
-  }
-
-  /* Sort NL West */
-  const sorted = [...NL_WEST].sort((a, b) => {
-    const wa = wlMap[a.id]?.w ?? 0, wb = wlMap[b.id]?.w ?? 0;
-    const la = wlMap[a.id]?.l ?? 0, lb = wlMap[b.id]?.l ?? 0;
-    return wb !== wa ? wb - wa : la - lb;
-  });
-  const leaderRec = wlMap[sorted[0].id] ?? { w: 0, l: 0 };
-
-  const html = sorted.map((team, idx) => {
-    const rec = wlMap[team.id] ?? { w: 0, l: 0 };
-    const isPadres = team.id === PADRES_ID;
-
-    let pct = '.000';
+  const html = rows.map(({ id, abbr, name, rec }) => {
+    const isPadres   = id === PADRES_ID;
     const totalGames = rec.w + rec.l;
-    if (totalGames > 0) {
-      pct = (rec.w / totalGames).toFixed(3).replace(/^0/, '');
-    }
+    const pct = totalGames > 0 ? (rec.w / totalGames).toFixed(3).replace(/^0/, '') : '.000';
+    const streakClass = rec.streak.startsWith('W') ? 'streak-w' : rec.streak.startsWith('L') ? 'streak-l' : '';
+    const teamGames = games.today.filter(g => g.teams.home.team.id === id || g.teams.away.team.id === id);
 
-    let gb = '—';
-    if (idx > 0) {
-      const n = ((leaderRec.w - rec.w) + (rec.l - leaderRec.l)) / 2;
-      gb = n <= 0 ? '—' : (n % 1 === 0 ? String(n) : n.toFixed(1));
-    }
-
-    const gameCell = buildGameCell(todayGames[team.id], team.id);
-
-    const streakCode = rec.streak ?? '';
-    const streakClass = streakCode.startsWith('W') ? 'streak-w' : streakCode.startsWith('L') ? 'streak-l' : '';
-
-    return `<tr class="${isPadres ? 'padres-row' : ''}" onclick="openTeamStats(${team.id}, '${team.name}', ${isPadres})">
+    return `<tr class="${isPadres ? 'padres-row' : ''}" data-team-id="${id}" onclick="openTeamStats(${id}, '${name}', ${isPadres})">
       <td>
-        <div class="team-name-cell">
-          <span class="team-abbr ${isPadres ? 'padres' : ''}">${team.abbr}</span>
-          <span class="team-full">${team.name}</span>
-        </div>
+        <button class="team-name-cell" aria-label="${name} stats">
+          <span class="team-abbr ${isPadres ? 'padres' : ''}">${abbr}</span>
+          <span class="team-full">${name}</span>
+        </button>
       </td>
       <td class="num"><div class="record">${rec.w}</div></td>
       <td class="num"><div class="record">${rec.l}</div></td>
       <td class="num"><div class="pct">${pct}</div></td>
-      <td class="num hide-mobile"><div class="gb">${gb}</div></td>
+      <td class="num hide-mobile"><div class="gb">${rec.gb || '—'}</div></td>
       <td class="num"><div class="record">${rec.l10w}-${rec.l10l}</div></td>
-      <td class="num hide-mobile"><div class="record ${streakClass}">${streakCode || '—'}</div></td>
-      <td class="next-game-cell">${gameCell}</td>
+      <td class="num hide-mobile"><div class="record ${streakClass}">${rec.streak || '—'}</div></td>
+      <td class="next-game-cell">${buildGameCell(teamGames, id)}</td>
     </tr>`;
   }).join('');
 
+  /* Redrawing drops keyboard focus, so put it back on the same team. */
+  const focusedId = document.activeElement?.closest('#standingsBody tr')?.dataset.teamId;
   $.standingsBody.innerHTML = html;
+  if (focusedId) focusStandingsTeam(focusedId);
+  return games;
 }
 
-function buildGameCell(g, teamId) {
-  if (!g) return '<div class="no-game">Off day</div>';
+function focusStandingsTeam(teamId) {
+  document.querySelector(`#standingsBody tr[data-team-id="${teamId}"] button`)?.focus({ preventScroll: true });
+}
 
-  if (g.state === 'Postponed') {
-    const sub = g.reschedLabel ? `→ ${g.reschedLabel}` : '';
-    return `<div class="game-time" style="color:var(--cream-muted)">Postponed</div>${sub ? `<div class="game-sub">${sub}</div>` : ''}`;
+/* One block per game, so both halves of a doubleheader show. */
+function buildGameCell(games, teamId) {
+  if (!games.length) return '<div class="no-game">Off day</div>';
+  return games.map((g, i) => {
+    const gameLabel = games.length > 1 ? `Gm ${i + 1} · ` : '';
+    return `<div class="game-entry">${buildGameEntry(g, teamId, gameLabel)}</div>`;
+  }).join('');
+}
+
+function buildGameEntry(g, teamId, gameLabel) {
+  const { home, away } = g.teams;
+  const isHome  = home.team.id === teamId;
+  const me      = isHome ? home : away;
+  const opp     = isHome ? away : home;
+  const myAbbr  = ID_TO_ABBR[me.team.id]  ?? '???';
+  const oppAbbr = ID_TO_ABBR[opp.team.id] ?? '???';
+  const myRuns  = me.score  ?? g.linescore?.teams?.[isHome ? 'home' : 'away']?.runs ?? 0;
+  const oppRuns = opp.score ?? g.linescore?.teams?.[isHome ? 'away' : 'home']?.runs ?? 0;
+  const state   = g.status.abstractGameState;
+  const detail  = (g.status.detailedState ?? '').toLowerCase();
+
+  const notPlaying = isSuspended(g) ? 'Suspended'
+    : detail.includes('postponed')  ? 'Postponed'
+    : detail.includes('cancel')     ? 'Cancelled'
+    : null;
+  if (notPlaying) {
+    const newDate = isSuspended(g) ? g.resumeGameDate : g.rescheduleGameDate;
+    const sub = [];
+    if (isSuspended(g)) sub.push(`${myAbbr} ${myRuns} – ${oppRuns} ${oppAbbr}`);
+    if (newDate) {
+      const [, mm, dd] = newDate.split('-');
+      sub.push(`→ ${MONTHS[parseInt(mm, 10) - 1]} ${parseInt(dd, 10)}`);
+    }
+    return `<div class="game-time game-off">${notPlaying}</div>${sub.length ? `<div class="game-sub">${gameLabel}${sub.join(' ')}</div>` : ''}`;
   }
 
-  const isHome  = g.homeId === teamId;
-  const myAbbr  = isHome ? g.homeAbbr : g.awayAbbr;
-  const oppAbbr = isHome ? g.awayAbbr : g.homeAbbr;
-  const myRuns  = isHome ? g.homeRuns : g.awayRuns;
-  const oppRuns = isHome ? g.awayRuns : g.homeRuns;
-  const vsAt    = isHome ? 'vs' : '@';
-
-  if (g.state === 'Live') {
-    const detailLower = g.detailedState.toLowerCase();
-    const isWarmup = detailLower.includes('warm')
-                  || (!g.inning && !g.half)
-                  || (g.inning === 1 && !g.half);
+  if (state === 'Live') {
+    const inning = g.linescore?.currentInning ?? null;
+    const half   = g.linescore?.inningHalf ?? null;
+    const isWarmup = detail.includes('warm')
+                  || (!inning && !half)
+                  || (inning === 1 && !half);
     const inningStr = isWarmup
       ? 'Warming Up'
-      : g.inning ? `${g.half ?? ''} ${g.inning}${ordinalSuffix(g.inning)}` : 'Live';
+      : inning ? `${half ?? ''} ${inning}${ordinalSuffix(inning)}` : 'Live';
     const scoreStr = isWarmup
       ? `${myAbbr} – ${oppAbbr}`
       : `${myAbbr} ${myRuns} – ${oppRuns} ${oppAbbr}`;
-    return `<div class="game-live"><span class="live-dot"></span><span class="game-scoreline">${scoreStr}</span></div><div class="game-sub">${inningStr}</div>`;
+    return `<div class="game-live"><span class="live-dot"></span><span class="game-scoreline">${scoreStr}</span></div><div class="game-sub">${gameLabel}${inningStr}</div>`;
   }
 
-  if (g.state === 'Final' || g.detailedState.toLowerCase().includes('final') || g.detailedState.toLowerCase().includes('completed')) {
+  if (state === 'Final' || detail.includes('final') || detail.includes('completed')) {
     const won = myRuns > oppRuns;
     const myCls  = won ? 'score-team-won'  : 'score-team-lost';
     const oppCls = won ? 'score-team-lost' : 'score-team-won';
     return `<div class="game-scoreline">
       <span class="${myCls}">${myAbbr} ${myRuns}</span><span class="score-dash"> – </span><span class="${oppCls}">${oppRuns} ${oppAbbr}</span>
-    </div><div class="game-sub">Final</div>`;
+    </div><div class="game-sub">${gameLabel}Final</div>`;
   }
 
-  /* The schedule was already fetched with date=todayStr so any game here is today's. */
-  return `<div class="game-time">${g.localTime}</div><div class="game-sub">${vsAt} ${oppAbbr}</div>`;
+  return `<div class="game-time">${formatGameTime(g)}</div><div class="game-sub">${gameLabel}${isHome ? 'vs' : '@'} ${oppAbbr}</div>`;
 }
 
 /* ── Padres game panel ────────────────────────────────────────── */
-function buildLineupEntry(p, players, pid, i) {
+function buildLineupEntry(p, pid, i) {
   const name = p?.person?.fullName ?? `Player ${pid}`;
   const pos  = p?.position?.abbreviation ?? p?.allPositions?.[0]?.abbreviation ?? '';
   const isSub = p?.gameStatus?.isSubstitute ?? false;
   return { num: i + 1, name, last: lastName(name), pos, id: pid, isSub };
 }
 
-function getLineup(side, feed, box) {
-  const feedTeam     = feed.liveData?.boxscore?.teams?.[side];
-  const battingOrder = feedTeam?.battingOrder ?? [];
-
-  if (battingOrder.length > 0) {
-    const players = feedTeam?.players ?? {};
-    return battingOrder.slice(0, 9).map((pid, i) =>
-      buildLineupEntry(players[`ID${pid}`], players, pid, i)
-    );
-  }
-
-  /* Fallback: boxscore batters */
-  const batters = box.teams[side].batters ?? [];
-  const players = box.teams[side].players ?? {};
-  return batters.slice(0, 9).map((pid, i) =>
-    buildLineupEntry(players[`ID${pid}`], players, pid, i)
-  );
+function getLineup(feedTeam) {
+  const players = feedTeam?.players ?? {};
+  const order   = feedTeam?.battingOrder ?? [];
+  const ids     = order.length ? order : feedTeam?.batters ?? []; /* order is empty until lineups are set */
+  return ids.slice(0, 9).map((pid, i) => buildLineupEntry(players[`ID${pid}`], pid, i));
 }
 
 /* Find the most recent pitcher with stats and return name + pitch count. */
@@ -1359,11 +1349,18 @@ function diamondSVG(first, second, third) {
   return `<svg width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">${baseRect(right.x, right.y, first)}${baseRect(top.x, top.y, second)}${baseRect(left.x, left.y, third)}</svg>`;
 }
 
+/* The parts of the live feed that renderLiveGame reads (4 KB instead of 120 KB). */
+const LIVE_FEED_FIELDS = [
+  'gameData,teams,home,away,id,teamName',
+  'liveData,linescore,currentInning,inningHalf,outs,runs,offense,first,second,third,batter,fullName',
+  'plays,currentPlay,atBatIndex,matchup,pitcher,count,balls,strikes,about,isComplete,result,event,isOut',
+  'runners,movement,end,details,runner,playEvents,isPitch,description',
+  'boxscore,battingOrder,batters,pitchers,players,person,position,allPositions,abbreviation',
+  'gameStatus,isSubstitute,stats,pitching,pitchesThrown,numberOfPitches',
+].join(',');
+
 async function renderLiveGame(liveGame) {
-  const [feed, box] = await Promise.all([
-    fetchJSON(`${STATS_API_V11}/game/${liveGame.gamePk}/feed/live`),
-    fetchJSON(`${STATS_API}/game/${liveGame.gamePk}/boxscore`),
-  ]);
+  const feed = await fetchJSON(`${STATS_API_V11}/game/${liveGame.gamePk}/feed/live?fields=${LIVE_FEED_FIELDS}`);
 
   const linescore = feed.liveData?.linescore ?? {};
   const play      = feed.liveData?.plays?.currentPlay ?? {};
@@ -1374,7 +1371,7 @@ async function renderLiveGame(liveGame) {
   const isWarmup =
        detailedState.toLowerCase().includes('warm')
     || (!play.atBatIndex && !play.matchup?.pitcher)
-    || (linescore.currentInning === 1 && !feed.liveData?.plays?.allPlays?.length);
+    || (linescore.currentInning === 1 && !feed.liveData?.plays?.currentPlay);
 
   const homeTeamId = feed.gameData?.teams?.home?.id;
   const awayId     = feed.gameData?.teams?.away?.id;
@@ -1397,9 +1394,10 @@ async function renderLiveGame(liveGame) {
   const onSecond = !!offense.second;
   const onThird  = !!offense.third;
 
-  const currentBatter = matchup.batter?.fullName ?? offense.batter?.fullName ?? '—';
-  const batterCount   = play.count ? `${play.count.balls}-${play.count.strikes}` : '';
-  const currentBatterLast = lastName(currentBatter);
+  const currentBatter     = matchup.batter ?? offense.batter;
+  const currentBatterId   = currentBatter?.id ?? null;
+  const currentBatterLast = lastName(currentBatter?.fullName);
+  const batterCount = play.count ? `${play.count.balls}-${play.count.strikes}` : '';
 
   const lastPitchDesc = (() => {
     if (isWarmup) return '';
@@ -1424,43 +1422,69 @@ async function renderLiveGame(liveGame) {
       if (e === 'double')                                return 'doubles';
       if (e === 'triple')                                return 'triples';
       if (e.includes('home run'))                        return 'homers';
+      if (e === 'strikeout double play')                 return 'strikes out into a double play';
       if (e.includes('strikeout'))                       return 'strikes out';
       if (e === 'walk' || e === 'intent walk')           return 'walks';
       if (e === 'hit by pitch')                          return 'hit by pitch';
+      if (e === 'grounded into dp')                      return 'grounds into a double play';
+      if (e === 'grounded into tp')                      return 'grounds into a triple play';
+      if (e === 'sac fly double play')                   return 'hits a sac fly into a double play';
+      if (e === 'sac bunt double play')                  return 'bunts into a double play';
+      if (e.includes('double play'))                     return 'hits into a double play'; /* mostly line drives */
+      if (e.includes('triple play'))                     return 'hits into a triple play';
       if (e.includes('groundout') || e === 'ground out') return 'grounds out';
       if (e.includes('flyout')    || e === 'fly out')    return 'flies out';
       if (e.includes('lineout')   || e === 'line out')   return 'lines out';
       if (e.includes('pop out')   || e.includes('popout')) return 'pops out';
-      if (e.includes('double play'))                     return 'grounds into a double play';
-      if (e.includes('triple play'))                     return 'into a triple play';
       if (e.includes('sac fly'))                         return 'hits a sac fly';
       if (e.includes('sac bunt'))                        return 'lays down a sac bunt';
-      if (e.includes('fielders choice out'))             return 'into a fielder\'s choice';
+      if (e.includes('fielders choice out'))             return 'hits into a fielder\'s choice';
       if (e.includes('fielders choice'))                 return 'reaches on fielder\'s choice';
-      if (e.includes('force out'))                       return 'into a force out';
+      if (e === 'forceout' || e === 'force out')         return 'hits into a force out';
+      if (e === 'field error')                           return 'reaches on an error';
+      if (e === 'catcher interference')                  return 'reaches on catcher interference';
       return event;
+    };
+
+    /* Plays that retire a runner while someone else is batting. */
+    const runnerOutPhrase = event => {
+      const [, kind, base] = /^(pickoff caught stealing|caught stealing|pickoff|runner out)\s*(\S*)/i.exec(event) ?? [];
+      if (!kind) return null;
+      const at = { '1b': '1st', '2b': '2nd', '3b': '3rd', home: 'home' }[base.toLowerCase()] ?? '';
+      switch (kind.toLowerCase()) {
+        case 'pickoff':    return at ? `picked off at ${at}` : 'picked off';
+        case 'runner out': return 'out on the bases';
+        default:           return `caught stealing ${at}`.trim();
+      }
     };
 
     if (play.about?.isComplete) {
       const event     = play.result?.event ?? '';
-      const eventType = (play.result?.eventType ?? '').toLowerCase();
-      const recordsOut = eventType.includes('out') || eventType === 'strikeout'
-                      || eventType === 'double_play' || eventType === 'triple_play'
-                      || eventType === 'grounded_into_double_play';
+      const runners   = play.runners ?? [];
+      const runnerOut = runnerOutPhrase(event);
 
-      const scorers = (play.runners ?? [])
+      const scorers = runners
         .filter(r => (r.movement?.end ?? '').toLowerCase() === 'score'
                   && !r.movement?.isOut
-                  && lastName(r.details?.runner?.fullName ?? '') !== batterLast)
+                  && r.details?.runner?.id !== currentBatterId)
         .map(r => lastName(r.details?.runner?.fullName ?? ''))
         .filter(Boolean);
 
-      const inningEnded = recordsOut && (outs === 0 || outs === 3);
-      const label  = [batterLast, eventPhrase(event)].filter(Boolean).join(' ')
+      /* isOut is also true when the batter is safe but a runner is thrown out,
+         which shouldn't read "singles to end the inning". */
+      const recordsOut  = !!play.result?.isOut;
+      const batterSafe  = ['single', 'double', 'triple', 'field error'].includes(event.toLowerCase());
+      const playOuts    = play.count?.outs ?? outs;
+      const inningEnded = recordsOut && !batterSafe && playOuts === 3;
+
+      const subject = runnerOut
+        ? lastName(runners.find(r => r.movement?.isOut)?.details?.runner?.fullName ?? '')
+        : batterLast;
+      const label  = [subject, runnerOut ?? eventPhrase(event)].filter(Boolean).join(' ')
                    + (inningEnded ? ' to end the inning' : '');
       const extras = [];
       if (scorers.length) extras.push(scorers.map(s => `${s} scores`).join(', '));
-      if (recordsOut && !inningEnded) extras.push(`${outs} out${outs !== 1 ? 's' : ''}`);
+      if (recordsOut && !inningEnded) extras.push(`${playOuts} out${playOuts !== 1 ? 's' : ''}`);
       return label + (extras.length ? ' · ' + extras.join(' · ') : '');
     }
 
@@ -1477,13 +1501,10 @@ async function renderLiveGame(liveGame) {
   const halfIsTop  = half.toLowerCase().includes('top');
   const halfArrow = halfIsTop ? '▲' : '▼';
 
-  const padresLineup = getLineup(padresSide, feed, box);
-  const oppLineup    = getLineup(oppSide,    feed, box);
-
-  const feedHome = feed.liveData?.boxscore?.teams?.home;
-  const feedAway = feed.liveData?.boxscore?.teams?.away;
-  const padresFeedTeam = padresSide === 'home' ? feedHome : feedAway;
-  const oppFeedTeam    = padresSide === 'home' ? feedAway : feedHome;
+  const padresFeedTeam = feed.liveData?.boxscore?.teams?.[padresSide];
+  const oppFeedTeam    = feed.liveData?.boxscore?.teams?.[oppSide];
+  const padresLineup = getLineup(padresFeedTeam);
+  const oppLineup    = getLineup(oppFeedTeam);
 
   const padresPitcher = getActivePitcherInfo(padresFeedTeam);
   const oppPitcher    = getActivePitcherInfo(oppFeedTeam);
@@ -1496,7 +1517,7 @@ async function renderLiveGame(liveGame) {
     const isBatting = halfIsTop ? side === 'away' : side === 'home';
     const isRight   = side === oppSide;
     return lineup.map(p => {
-      const isCurrent = isBatting && p.last === currentBatterLast && !isWarmup;
+      const isCurrent = isBatting && p.id === currentBatterId && !isWarmup;
       const subMark = p.isSub ? '<span class="sub-mark">↑</span>' : '';
       const posStr  = `<span class="pos-tag">${p.pos}</span>`;
       const inner = isRight
@@ -1568,12 +1589,17 @@ async function renderLiveGame(liveGame) {
     </div>`;
 }
 
-/* The next unplayed game in the coming days, with pitchers/lineups/TV. */
+/* The next unplayed game with pitchers/lineups/TV. Looks a few days ahead, and
+   in the offseason all the way to the next Opening Day. */
 async function fetchNextGame() {
-  const range = await fetchJSON(`${STATS_API}/schedule?sportId=1&startDate=${getLocalDateStr(0)}&endDate=${getLocalDateStr(10)}&teamId=${PADRES_ID}&gameType=${GAME_TYPES}&fields=dates,games,gamePk,gameDate,status,abstractGameState`);
-  const upcoming = (range.dates ?? []).flatMap(d => d.games ?? [])
-    .filter(g => g.status.abstractGameState === 'Preview')
-    .sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate));
+  let upcoming = [];
+  for (const daysAhead of [10, 200]) {
+    const range = await fetchJSON(`${STATS_API}/schedule?sportId=1&startDate=${getLocalDateStr(0)}&endDate=${getLocalDateStr(daysAhead)}&teamId=${PADRES_ID}&gameType=${GAME_TYPES}&fields=dates,games,gamePk,gameDate,status,abstractGameState`);
+    upcoming = (range.dates ?? []).flatMap(d => d.games ?? [])
+      .filter(g => g.status.abstractGameState === 'Preview')
+      .sort((a, b) => new Date(a.gameDate) - new Date(b.gameDate));
+    if (upcoming.length) break;
+  }
   if (!upcoming.length) return null;
 
   const detail = await fetchJSON(`${STATS_API}/schedule?sportId=1&gamePk=${upcoming[0].gamePk}&hydrate=probablePitcher,lineups,broadcasts(all),seriesStatus`);
@@ -1593,11 +1619,8 @@ async function renderNextGame() {
   const awayId = next.teams.away.team.id;
   const homeAbbr = next.teams.home.team.abbreviation || ID_TO_ABBR[homeId] || '???';
   const awayAbbr = next.teams.away.team.abbreviation || ID_TO_ABBR[awayId] || '???';
-  const startUTC = new Date(next.gameDate);
-  const timeStr = next.status.startTimeTBD
-    ? 'Time TBD'
-    : startUTC.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
-  const dateLbl = startUTC.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const timeStr = formatGameTime(next);
+  const dateLbl = new Date(next.gameDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   const homeProbable    = next.teams.home.probablePitcher?.fullName ?? null;
   const awayProbable    = next.teams.away.probablePitcher?.fullName ?? null;
@@ -1611,6 +1634,9 @@ async function renderNextGame() {
 
   const seriesGame  = next.seriesGameNumber ?? null;
   const seriesTotal = next.gamesInSeries ?? null;
+  const isPostseason = next.gameType !== 'R';
+  const padresRec    = next.teams[padresSide].leagueRecord;
+  const isOpeningDay = !isPostseason && seriesGame === 1 && padresRec?.wins === 0 && padresRec?.losses === 0;
   const venueName   = next.venue?.name ?? null;
 
   const tvBroadcasts = [...new Set(
@@ -1621,13 +1647,12 @@ async function renderNextGame() {
   )];
 
   /* Parallel: pitcher season stats + season series record */
-  const todayStr = getLocalDateStr(0);
   const pitcherStatUrl = id =>
-    `${STATS_API}/people/${id}/stats?stats=season&group=pitching&season=${SEASON}&sportId=1`;
+    `${STATS_API}/people/${id}/stats?stats=season&group=pitching&season=${next.season}&sportId=1`;
   const [homeStatsData, awayStatsData, seriesSchedule] = await Promise.all([
     homeProbableId ? fetchJSON(pitcherStatUrl(homeProbableId)).catch(() => null) : Promise.resolve(null),
     awayProbableId ? fetchJSON(pitcherStatUrl(awayProbableId)).catch(() => null) : Promise.resolve(null),
-    fetchJSON(`${STATS_API}/schedule?sportId=1&startDate=${SEASON}-03-01&endDate=${todayStr}&teamId=${PADRES_ID}&gameType=R`).catch(() => null),
+    isPostseason ? null : fetchJSON(`${STATS_API}/schedule?sportId=1&season=${next.season}&teamId=${PADRES_ID}&opponentId=${oppId}&gameType=R&fields=dates,games,gamePk,status,abstractGameState,detailedState,teams,home,away,team,id,score`).catch(() => null),
   ]);
 
   function pitcherStatStr(data) {
@@ -1642,11 +1667,10 @@ async function renderNextGame() {
 
   let seriesW = 0, seriesL = 0;
   if (seriesSchedule) {
-    const allGames = (seriesSchedule.dates ?? []).flatMap(d => d.games ?? []);
-    for (const g of allGames) {
-      const hId = g.teams.home.team.id, aId = g.teams.away.team.id;
-      if ((hId !== oppId && aId !== oppId) || g.status.abstractGameState !== 'Final') continue;
-      const padresIsHome = hId === PADRES_ID;
+    const played = (seriesSchedule.dates ?? []).flatMap(d => d.games ?? []).filter(wasPlayed);
+    /* A suspended game is listed on both its original and resumed date. */
+    for (const g of new Map(played.map(g => [g.gamePk, g])).values()) {
+      const padresIsHome = g.teams.home.team.id === PADRES_ID;
       const padresRuns = padresIsHome ? (g.teams.home.score ?? 0) : (g.teams.away.score ?? 0);
       const oppRuns    = padresIsHome ? (g.teams.away.score ?? 0) : (g.teams.home.score ?? 0);
       if (padresRuns > oppRuns) seriesW++; else seriesL++;
@@ -1655,7 +1679,6 @@ async function renderNextGame() {
 
   /* ── Build HTML blocks ─────────────────────────────────────── */
   const metaParts = [];
-  const isPostseason = next.gameType !== 'R';
   if (isPostseason && next.seriesDescription) metaParts.push(next.seriesDescription);
   if (seriesGame && seriesTotal) metaParts.push(`Game ${seriesGame} of ${seriesTotal}`);
   if (venueName) metaParts.push(venueName);
@@ -1690,7 +1713,7 @@ async function renderNextGame() {
 
   $.gamePanel.innerHTML = `${CORNERS_HTML}
     <div class="gp-next">
-      <div class="gp-next-label">Next Game</div>
+      <div class="gp-next-label">${isOpeningDay ? 'Opening Day' : 'Next Game'}</div>
       ${metaLine}
       <div class="gp-next-teams">${awayAbbr} @ ${homeAbbr}</div>
       <div class="gp-next-time">${timeStr}</div>
@@ -1711,7 +1734,6 @@ async function renderNextGame() {
 let _refreshTimer = null;
 let _refreshing   = false;
 let _panelKey     = null; /* what the game panel currently shows */
-let _standingsPollInterval = null;
 let _lastPitchDescCache = '';
 
 /* A game that was actually finished (MLB marks postponed games "Final" too). */
@@ -1720,17 +1742,24 @@ function wasPlayed(g) {
       && !/postponed|cancel/i.test(g.status.detailedState ?? '');
 }
 
+function isSuspended(g) {
+  return /suspended/i.test(g.status.detailedState ?? '');
+}
+
+function isInProgress(g) {
+  return g.status.abstractGameState === 'Live' && !isSuspended(g);
+}
+
 /* Today's live game, or yesterday's if it has run past midnight PT. */
 function findLiveGame(todayGames, yesterdayGames) {
-  const isLive = g => g.status.abstractGameState === 'Live';
-  return todayGames.find(isLive)
-      ?? yesterdayGames.find(g => isLive(g) && !/suspended/i.test(g.status.detailedState ?? ''));
+  return todayGames.find(g => g.status.abstractGameState === 'Live')
+      ?? yesterdayGames.find(isInProgress);
 }
 
 function nextRefreshDelay(todayGames, liveGame) {
   if (liveGame) return GAME_POLL_MS;
   const starts = todayGames
-    .filter(g => g.status.abstractGameState === 'Preview')
+    .filter(g => g.status.abstractGameState === 'Preview' && !g.status.startTimeTBD) /* TBD times are placeholders */
     .map(g => new Date(g.gameDate).getTime());
   if (!starts.length) return IDLE_POLL_MS;
   const untilPregame = Math.min(...starts) - Date.now() - PREGAME_WINDOW_MS;
@@ -1801,19 +1830,51 @@ async function runRefreshLoop() {
   }, delay);
 }
 
-function startStandingsPolling() {
-  if (_standingsPollInterval) return;
-  _standingsPollInterval = setInterval(() => {
-    if (document.visibilityState === 'hidden') return;
-    fetchNLWest().catch(() => {});
-  }, STANDINGS_POLL_MS);
+/* Standings have their own, slower loop: every 30s while a division game is on
+   or about to start, every few minutes otherwise on a game day and after a late
+   game (the table can lag a final), and only at the date change when nobody plays. */
+let _standingsTimer = null;
+let _standingsDue   = 0;  /* when the table next needs a refresh */
+let _standingsDate  = ''; /* the date it was drawn for */
+
+async function refreshStandings() {
+  if (!$.standingsBody) return; /* stats panel is open; closing it refreshes */
+  const todayStr = getLocalDateStr(0);
+  const newDay   = _standingsDate && _standingsDate !== todayStr;
+  let delay = STANDINGS_POLL_MS; /* retry delay if this refresh fails */
+  try {
+    const { yesterday, today } = await fetchNLWest();
+    /* A game can run past midnight PT into a day when nobody plays. */
+    const liveGame = [...today, ...yesterday].find(isInProgress);
+    const justEnded = yesterday.some(g => Date.now() - new Date(g.gameDate) < LATE_GAME_MS);
+    delay = today.length || liveGame || justEnded
+      ? Math.max(STANDINGS_POLL_MS, nextRefreshDelay(today, liveGame))
+      : Infinity;
+    _standingsDate = todayStr;
+    if (newDay) lockPanelHeights(); /* a doubleheader makes rows taller */
+  } catch (err) {
+    console.error('Standings refresh failed:', err);
+    /* Keep the last good table on screen. */
+    if ($.standingsBody && !$.standingsBody.querySelector('[data-team-id]')) {
+      $.standingsBody.innerHTML = `<tr><td colspan="8" class="cell-error">Error loading standings: ${err.message}</td></tr>`;
+    }
+  }
+  _standingsDue = Date.now() + delay;
+}
+
+async function runStandingsLoop({ force = false } = {}) {
+  const isDue = force || Date.now() >= _standingsDue || getLocalDateStr(0) !== _standingsDate;
+  if (isDue && document.visibilityState !== 'hidden') await refreshStandings();
+  clearTimeout(_standingsTimer); /* after the await, so overlapping calls leave one timer */
+  const untilDue = _standingsDue - Date.now();
+  _standingsTimer = setTimeout(runStandingsLoop, Math.min(Math.max(untilDue, STANDINGS_POLL_MS), IDLE_POLL_MS));
 }
 
 /* When the tab becomes visible again, do an immediate refresh so we're
    not staring at stale data while we wait for the next tick. */
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
-  fetchNLWest().catch(() => {});
+  runStandingsLoop({ force: true });
   runRefreshLoop();
 });
 
@@ -1822,8 +1883,8 @@ document.addEventListener('visibilitychange', () => {
 let _resizeTimer = null;
 function lockPanelHeights() {
   if (!$.nlwestPanel || !$.gamePanel) return;
-  /* The stats view manages its own height */
-  if ($.nlwestPanel.classList.contains('stats-open')) return;
+  /* The stats view manages its own height, also while it slides closed */
+  if ($.nlwestPanel.classList.contains('stats-open') || _statsClosing) return;
   /* Reset before measuring so we measure natural content height */
   $.nlwestPanel.style.height = '';
   $.gamePanel.style.height = '';
@@ -1840,6 +1901,10 @@ function lockPanelHeights() {
 window.addEventListener('resize', () => {
   clearTimeout(_resizeTimer);
   _resizeTimer = setTimeout(lockPanelHeights, 150);
+});
+/* Web fonts can arrive after the first measurement. */
+document.fonts.addEventListener('loadingdone', () => {
+  if (_panelKey !== null) lockPanelHeights();
 });
 
 /* ── Highlights ───────────────────────────────────────────────────
@@ -1985,73 +2050,81 @@ let _promoKey = null; /* yesterday's date + game states the cards were drawn fro
 
 async function renderPromos(dateStr, games) {
   const key = [dateStr, ...games.map(g => `${g.gamePk}:${g.status.detailedState}`)].join('|');
-  if (key === _promoKey) return;
+  const isRedraw = key === _promoKey;
+  if (isRedraw && !games.some(isInProgress)) return; /* a live game's numbers keep changing */
   _promoKey = key;
   try {
     await drawPromos(games);
   } catch (err) {
     console.error('Promo fetch failed:', err);
+    if (isRedraw) return; /* keep the last good numbers on screen */
     _promoKey = null; /* retry on the next refresh */
     renderAllCards(() => ({ status: 'error' }));
   }
 }
 
+/* A promo needs to be triggered in just one game, so on a doubleheader each card
+   shows the game that earned it. */
 async function drawPromos(games) {
-  const game = games.find(g =>
-       g.status.abstractGameState === 'Final'
-    || g.status.abstractGameState === 'Live'
-  );
+  const started = games.filter(g => wasPlayed(g) || isInProgress(g));
 
   /* The promo offers are only known to apply to regular-season games. */
-  if (!game || game.gameType !== 'R') {
-    renderAllCards(() => ({ status: game ? 'postseason' : 'nogame' }));
+  if (!started.length || started[0].gameType !== 'R') {
+    const notPlayed = games[0]?.status.detailedState.split(':')[0].toLowerCase();
+    renderAllCards(() => started.length
+      ? { status: 'postseason' }
+      : { status: 'nogame', reason: notPlayed && `Game ${notPlayed}` });
     $.matchupLine.textContent = '';
     return;
   }
 
-  const isLive = game.status.abstractGameState === 'Live';
-  const box = await fetchJSON(`${STATS_API}/game/${game.gamePk}/boxscore`);
-  const homeId = box.teams.home.team.id;
-  const padresSide = homeId === PADRES_ID ? 'home' : 'away';
-  const oppSide    = padresSide === 'home' ? 'away' : 'home';
-  const padresRuns = box.teams[padresSide].teamStats?.batting?.runs ?? 0;
-  const oppRuns    = box.teams[oppSide].teamStats?.batting?.runs ?? 0;
-  const isWin = !isLive && padresRuns > oppRuns;
-  const oppName = box.teams[oppSide].team.name;
-  const score = { padres: padresRuns, opp: oppRuns };
-  const status = isLive ? 'live' : 'final';
-
-  const awayLabel = padresSide === 'away' ? 'Padres' : oppName;
-  const homeLabel = padresSide === 'home' ? 'Padres' : oppName;
-  const awayR = padresSide === 'away' ? padresRuns : oppRuns;
-  const homeR = padresSide === 'home' ? padresRuns : oppRuns;
+  const results = await Promise.all(started.map(async game => {
+    const box = await fetchJSON(`${STATS_API}/game/${game.gamePk}/boxscore?fields=teams,home,away,team,id,name,teamStats,batting,pitching,runs,strikeOuts,stolenBases,homeRuns,batters,pitchers,players,stats`);
+    const padresSide = box.teams.home.team.id === PADRES_ID ? 'home' : 'away';
+    const oppSide    = padresSide === 'home' ? 'away' : 'home';
+    const score = {
+      padres: box.teams[padresSide].teamStats?.batting?.runs ?? 0,
+      opp:    box.teams[oppSide].teamStats?.batting?.runs ?? 0,
+    };
+    const isLive = !wasPlayed(game);
+    return {
+      box, padresSide, score, isLive,
+      oppName: box.teams[oppSide].team.name,
+      isWin: !isLive && score.padres > score.opp,
+      gameNote: started.length > 1 ? ` (Game ${game.gameNumber})` : '',
+    };
+  }));
 
   renderAllCards(promo => {
-    const { value, label } = promo.stat(box, padresSide, isWin);
-    return { status, value, label, isWin, score };
+    const states = results.map(r => ({
+      ...promo.stat(r.box, r.padresSide, r.isWin),
+      status: r.isLive ? 'live' : 'final',
+      score: r.score,
+      gameNote: r.gameNote,
+    }));
+    return states.find(s => s.status === 'final' && promo.check(s.value))
+        ?? states.find(s => s.status === 'live')
+        ?? states.reduce((best, s) => s.value >= best.value ? s : best);
   });
 
-  $.matchupLine.innerHTML = isLive
-    ? `<span class="matchup-live">● LIVE &nbsp;—&nbsp; </span>${awayLabel} ${awayR} — ${homeR} ${homeLabel}`
-    : `${awayLabel} ${awayR} — ${homeR} ${homeLabel}`;
+  $.matchupLine.innerHTML = results.map(r => {
+    const padres = ['Padres', r.score.padres], opp = [r.oppName, r.score.opp];
+    const [away, home] = r.padresSide === 'away' ? [padres, opp] : [opp, padres];
+    const live = r.isLive ? '<span class="matchup-live">● LIVE &nbsp;—&nbsp; </span>' : '';
+    return `<div>${live}${away[0]} ${away[1]} — ${home[1]} ${home[0]}</div>`;
+  }).join('');
 }
 
 async function init() {
   $.headerDate.textContent = formatDisplayDate(getLocalDateStr(0));
   renderAllCards(() => ({ status: 'loading' }));
 
-  const standingsTask = fetchNLWest().catch(err => {
-    $.standingsBody.innerHTML = `<tr><td colspan="8" class="cell-error">Error loading standings: ${err.message}</td></tr>`;
-  });
-
-  /* The refresh loop draws the game panel, promos and highlights buttons,
-     then keeps rescheduling itself. */
-  await Promise.all([standingsTask, runRefreshLoop()]);
+  /* The refresh loop draws the game panel, promos and highlights buttons.
+     Both loops keep rescheduling themselves. */
+  await Promise.all([runStandingsLoop(), runRefreshLoop()]);
 
   /* After both panels load, lock both to standingsPanel height */
   requestAnimationFrame(lockPanelHeights);
-
-  startStandingsPolling();
 }
 
 init();
@@ -2059,7 +2132,7 @@ init();
 /* ── Team Stats Panel ──────────────────────────────────────────── */
 let _statsTeamId   = null;
 let _statsTab      = 'hitting'; // 'hitting' | 'pitching'
-let _statsData     = { hitting: null, pitching: null };
+let _statsData     = {};        // loaded tabs; replaced on every open/close, so it also identifies the session
 let _statsSortCol  = null;
 let _statsSortDir  = 'desc';
 
@@ -2125,7 +2198,8 @@ const LAST_GAME_PITCHING_COLS = [
    pin the panel to a fixed pixel height during the stats view so
    the slide animation has stable from/to values. */
 
-let _standingsH = 0; // captured on first open
+let _standingsH   = 0;     // captured on open
+let _statsClosing = false; // panel is sliding back to the standings
 
 function panelSlide(panel, fromH, toH, ms) {
   return new Promise(resolve => {
@@ -2149,9 +2223,10 @@ function panelSlide(panel, fromH, toH, ms) {
 }
 
 async function openTeamStats(teamId, teamName, isPadres) {
+  const session = {};
   _statsTeamId  = teamId;
   _statsTab     = 'hitting';
-  _statsData    = { hitting: null, pitching: null };
+  _statsData    = session;
   _statsSortCol = 'avg';
   _statsSortDir = 'desc';
 
@@ -2160,8 +2235,8 @@ async function openTeamStats(teamId, teamName, isPadres) {
 
   const panel = document.getElementById('nlwestPanel');
 
-  // Capture standings height before anything changes
-  _standingsH = panel.getBoundingClientRect().height;
+  // Capture standings height before anything changes (mid-close it's still shrinking)
+  if (!_statsClosing) _standingsH = panel.getBoundingClientRect().height;
   const targetH = Math.round(_standingsH * 2);
 
   // Pin height so the slide animation has a starting point
@@ -2171,8 +2246,10 @@ async function openTeamStats(teamId, teamName, isPadres) {
   // Fade out just the inner content
   const inner = panel.querySelector('table, .stats-header, .gp-next');
   if (inner) await inner.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }).finished;
+  if (_statsData !== session) return; // closed, or another team was opened
 
   // Swap content while invisible
+  const hadFocus = panel.contains(document.activeElement);
   panel.innerHTML = `
     <div class="corner tl"></div><div class="corner tr"></div>
     <div class="corner bl"></div><div class="corner br"></div>
@@ -2190,6 +2267,7 @@ async function openTeamStats(teamId, teamName, isPadres) {
     </div>`;
 
   panel.classList.add('stats-open');
+  if (hadFocus) panel.querySelector('.stats-back-btn').focus({ preventScroll: true });
 
   // Slide panel height AND fade in content simultaneously
   await Promise.all([
@@ -2203,39 +2281,50 @@ async function openTeamStats(teamId, teamName, isPadres) {
     })(),
   ]);
 
+  if (_statsData !== session) return;
+
   panel.style.height = targetH + 'px';
   panel.style.flex   = 'none'; // keep flex:none so height stays fixed during stats view
 
-  await loadStatsTab(teamId, 'hitting');
+  if (_statsTab === 'hitting') await loadStatsTab(); // else a tab click already loaded it
 }
 
-async function loadStatsTab(teamId, tab) {
-  if (tab === 'lastgame') {
-    if (_statsData.lastgame) {
-      renderLastGame();
+/* Shows the selected tab, fetching it first if needed. A response that arrives
+   after the tab, team or panel changed is kept for its own session but not drawn. */
+async function loadStatsTab() {
+  const session = _statsData, tab = _statsTab, teamId = _statsTeamId;
+  const isCurrent = () => session === _statsData && tab === _statsTab;
+
+  if (!session[tab]) {
+    showStatsMessage(tab === 'lastgame' ? 'Loading last game...' : 'Loading stats...');
+    try {
+      session[tab] = tab === 'lastgame' ? await fetchLastGameStats(teamId) : await fetchSeasonStats(teamId, tab);
+    } catch (err) {
+      console.error('Stats fetch failed:', err);
+      if (isCurrent()) showStatsMessage('Could not load stats. <button class="stats-tab" onclick="loadStatsTab()">Retry</button>');
       return;
     }
-    const wrap = document.getElementById('statsTableWrap');
-    if (wrap) { wrap.style.opacity = '0'; wrap.innerHTML = '<div class="stats-loading">Loading last game...</div>'; wrap.style.opacity = '1'; }
-    await fetchLastGameStats(teamId);
-    return;
+    if (!isCurrent()) return;
   }
 
-  if (_statsData[tab]) {
-    renderStatsTable(tab);
-    return;
-  }
+  if (tab === 'lastgame') renderLastGame();
+  else renderStatsTable(tab);
+}
 
-  const group = tab === 'hitting' ? 'hitting' : 'pitching';
-  const url   = `${STATS_API}/stats?stats=season&group=${group}&season=${SEASON}&sportId=1&gameType=R&teamId=${teamId}&playerPool=ALL&limit=100`;
-  const data  = await fetchJSON(url);
-  const rawSplits = data.stats?.[0]?.splits ?? [];
+function showStatsMessage(html) {
+  const wrap = document.getElementById('statsTableWrap');
+  if (!wrap) return;
+  /* Replacing a focused Retry button drops keyboard focus, so move it to the tab. */
+  if (wrap.contains(document.activeElement)) document.querySelector('.stats-tab.active')?.focus({ preventScroll: true });
+  wrap.innerHTML = `<div class="stats-loading" role="status">${html}</div>`;
+  wrap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'forwards' });
+}
 
-  _statsData[tab] = rawSplits
+async function fetchSeasonStats(teamId, group) {
+  const data = await fetchJSON(`${STATS_API}/stats?stats=season&group=${group}&season=${_season}&sportId=1&gameType=R&teamId=${teamId}&playerPool=ALL&limit=100`);
+  return (data.stats?.[0]?.splits ?? [])
     .filter(s => s.player?.fullName)
     .map(s => ({ name: s.player.fullName, pos: s.position?.abbreviation ?? '', ...s.stat }));
-
-  renderStatsTable(tab);
 }
 
 function renderStatsTable(tab) {
@@ -2259,8 +2348,9 @@ function renderStatsTable(tab) {
   });
 
   const thead = cols.map(c => {
-    const cls = c.key === sortKey ? ` sort-${_statsSortDir}` : '';
-    return `<th class="${cls}" onclick="sortStats('${c.key}')">${c.label}</th>`;
+    const sorted = c.key === sortKey
+      ? ` class="sort-${_statsSortDir}" aria-sort="${_statsSortDir}ending"` : '';
+    return `<th${sorted} data-key="${c.key}" onclick="sortStats('${c.key}')"><button>${c.label}</button></th>`;
   }).join('');
 
   const tbody = rows.length
@@ -2274,8 +2364,13 @@ function renderStatsTable(tab) {
   const wrap = document.getElementById('statsTableWrap');
   if (!wrap) return;
 
+  const session = _statsData;
   wrap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'forwards' }).finished.then(() => {
+    if (session !== _statsData || tab !== _statsTab) return; /* switched during the fade */
+    /* Redrawing drops keyboard focus, so put it back on the same header. */
+    const focusedKey = wrap.contains(document.activeElement) && document.activeElement.closest('th')?.dataset.key;
     wrap.innerHTML = `<table class="stats-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
+    if (focusedKey) wrap.querySelector(`th[data-key="${focusedKey}"] button`)?.focus({ preventScroll: true });
     wrap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'forwards' });
   });
 }
@@ -2298,12 +2393,16 @@ async function switchStatsTab(tab) {
   document.getElementById('tabLastGame')?.classList.toggle('active', tab === 'lastgame');
   document.getElementById('tabHitting')?.classList.toggle('active',  tab === 'hitting');
   document.getElementById('tabPitching')?.classList.toggle('active', tab === 'pitching');
-  await loadStatsTab(_statsTeamId, tab);
+  await loadStatsTab();
 }
 
 async function closeTeamStats() {
-  _statsTeamId = null;
-  _statsData   = { hitting: null, pitching: null };
+  if (_statsTeamId === null) return; // already closing
+  const teamId  = _statsTeamId;
+  const session = {};
+  _statsTeamId  = null;
+  _statsData    = session;
+  _statsClosing = true;
   document.getElementById('standingsLabel').textContent = 'NL West Standings';
 
   const panel    = document.getElementById('nlwestPanel');
@@ -2318,6 +2417,8 @@ async function closeTeamStats() {
   if (wrap)   fadeOuts.push(wrap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }).finished);
   await Promise.all(fadeOuts);
 
+  const hadFocus = panel.contains(document.activeElement);
+
   // Swap HTML — this wipes all inline styles including height
   panel.innerHTML = CORNERS_HTML + STANDINGS_TABLE_HTML;
   const restoredTable = panel.querySelector('table');
@@ -2326,7 +2427,7 @@ async function closeTeamStats() {
   panel.classList.remove('stats-open');
 
   // Start fetching the standings data immediately so it's ready in the background
-  const standingsPromise = fetchNLWest().catch(() => {});
+  const standingsPromise = runStandingsLoop({ force: true });
 
   // Re-lock height immediately after innerHTML wiped it, with no transition
   panel.style.transition = 'none';
@@ -2351,31 +2452,33 @@ async function closeTeamStats() {
   // Wait for the standings data to actually populate the DOM so the height doesn't collapse
   await standingsPromise;
 
+  _statsClosing = false;
+  if (_statsData !== session) return; // a team was opened meanwhile
+
+  if (hadFocus && !panel.contains(document.activeElement)) focusStandingsTeam(teamId);
+
   // Release back to flex
   panel.style.transition = 'none';
   panel.style.height     = '';
   panel.style.overflow   = '';
   panel.style.flex       = '';
+  lockPanelHeights(); // the rows or the window may have changed meanwhile
 }
 
 /* ── Last Game stats ─────────────────────────────────────────────
-   Finds the most recent completed game for the selected team,
-   fetches the full boxscore, and renders hitting + pitching for both teams. */
+   Finds the most recent completed game for the selected team (looking back
+   to last season if need be) and fetches its full boxscore, for hitting + pitching tables of both teams. */
 
 async function fetchLastGameStats(teamId) {
-  const sched = await fetchJSON(`${STATS_API}/schedule?sportId=1&startDate=${getLocalDateStr(-10)}&endDate=${getLocalDateStr(0)}&teamId=${teamId}&gameType=${GAME_TYPES}`);
-  const game  = (sched.dates ?? []).flatMap(d => d.games ?? []).filter(wasPlayed).at(-1);
-  const gamePk       = game?.gamePk;
-  const homeTeamName = game?.teams.home.team.name ?? '';
-  const awayTeamName = game?.teams.away.team.name ?? '';
-
-  if (!gamePk) {
-    const wrap = document.getElementById('statsTableWrap');
-    if (wrap) wrap.innerHTML = '<div class="stats-loading">No recent games found</div>';
-    return;
+  let game;
+  for (const daysBack of [10, 200]) {
+    const sched = await fetchJSON(`${STATS_API}/schedule?sportId=1&startDate=${getLocalDateStr(-daysBack)}&endDate=${getLocalDateStr(0)}&teamId=${teamId}&gameType=${GAME_TYPES}&fields=dates,games,gamePk,status,abstractGameState,detailedState,teams,home,away,team,id,name`);
+    game = (sched.dates ?? []).flatMap(d => d.games ?? []).filter(wasPlayed).at(-1);
+    if (game) break;
   }
+  if (!game) return { noGame: true };
 
-  const box    = await fetchJSON(`${STATS_API}/game/${gamePk}/boxscore`);
+  const box    = await fetchJSON(`${STATS_API}/game/${game.gamePk}/boxscore`);
   const homeAbbr = box.teams.home.team.abbreviation ?? box.teams.home.team.name.split(' ').pop();
   const awayAbbr = box.teams.away.team.abbreviation ?? box.teams.away.team.name.split(' ').pop();
   const homeR  = box.teams.home.teamStats?.batting?.runs ?? 0;
@@ -2404,17 +2507,13 @@ async function fetchLastGameStats(teamId) {
       .map(p => ({ name: p.person?.fullName ?? '—', ...p.stats?.pitching }));
   }
 
-  _statsData.lastgame = {
-    gamePk,
+  return {
+    side:    game.teams.home.team.id === teamId ? 'home' : 'away', /* the team being shown */
     score:   `${awayAbbr} ${awayR} – ${homeR} ${homeAbbr}`,
-    home:    { abbr: homeAbbr, name: homeTeamName, hitters: buildHitters('home'), pitchers: buildPitchers('home') },
-    away:    { abbr: awayAbbr, name: awayTeamName, hitters: buildHitters('away'), pitchers: buildPitchers('away') },
+    home:    { abbr: homeAbbr, name: game.teams.home.team.name, hitters: buildHitters('home'), pitchers: buildPitchers('home') },
+    away:    { abbr: awayAbbr, name: game.teams.away.team.name, hitters: buildHitters('away'), pitchers: buildPitchers('away') },
   };
-
-  renderLastGame();
 }
-
-let _lgSelectedSide = 'away'; // 'away' | 'home'
 
 function lgStatTable(players, cols, emptyColspan) {
   const thead = cols.map(c => `<th>${c.label}</th>`).join('');
@@ -2442,26 +2541,28 @@ function renderLastGame() {
   const data = _statsData.lastgame;
   const wrap = document.getElementById('statsTableWrap');
   if (!wrap || !data) return;
+  if (data.noGame) {
+    showStatsMessage('No recent games found');
+    return;
+  }
 
   wrap.innerHTML = `
     <div class="lg-score">${data.score}</div>
     <div class="lg-team-picker">
-      <button class="lg-team-btn ${_lgSelectedSide === 'away' ? 'active' : ''}"
+      <button class="lg-team-btn ${data.side === 'away' ? 'active' : ''}"
         onclick="selectLgSide('away')">${data.away.abbr}</button>
-      <button class="lg-team-btn ${_lgSelectedSide === 'home' ? 'active' : ''}"
+      <button class="lg-team-btn ${data.side === 'home' ? 'active' : ''}"
         onclick="selectLgSide('home')">${data.home.abbr}</button>
     </div>
-    <div id="lgTeamContent">${lgTeamContentHTML(data[_lgSelectedSide])}</div>`;
+    <div id="lgTeamContent">${lgTeamContentHTML(data[data.side])}</div>`;
 
   wrap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'forwards' });
 }
 
 function selectLgSide(side) {
-  if (side === _lgSelectedSide) return;
-  _lgSelectedSide = side;
-
   const data = _statsData.lastgame;
-  if (!data) return;
+  if (!data || side === data.side) return;
+  data.side = side;
 
   document.querySelectorAll('.lg-team-btn').forEach(btn => {
     btn.classList.toggle('active', btn.textContent.trim() === data[side].abbr);
@@ -2512,28 +2613,32 @@ function selectLgSide(side) {
     overlay.appendChild(video);
     document.body.appendChild(overlay);
 
-    /* Fade overlay in + ramp audio up over 2s */
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      overlay.style.opacity = '1';
+    /* Ramp the volume to a level over 2s, replacing any ramp already running. */
+    let ramp = null;
+    const rampVolume = to => {
+      clearInterval(ramp);
+      const from = video.volume, steps = 40;
       let step = 0;
-      const steps = 40, interval = 2000 / steps;
-      const fadeIn = setInterval(() => {
-        video.volume = Math.min(1, ++step / steps);
-        if (step >= steps) clearInterval(fadeIn);
-      }, interval);
+      ramp = setInterval(() => {
+        video.volume = from + (to - from) * (++step / steps);
+        if (step >= steps) clearInterval(ramp);
+      }, 2000 / steps);
+    };
+
+    /* Fade overlay in + ramp audio up over 2s */
+    let closing = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (closing) return;
+      overlay.style.opacity = '1';
+      rampVolume(1);
     }));
 
     const fadeOut = () => {
+      closing = true;
       video.removeEventListener('ended', fadeOut);
       overlay.removeEventListener('click', fadeOut);
 
-      let step = 0;
-      const steps = 40, interval = 2000 / steps;
-      const ramp = setInterval(() => {
-        video.volume = Math.max(0, 1 - (++step / steps));
-        if (step >= steps) clearInterval(ramp);
-      }, interval);
-
+      rampVolume(0);
       overlay.style.opacity = '0';
       setTimeout(() => { video.pause(); overlay.remove(); }, 2000);
     };
