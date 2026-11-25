@@ -74,16 +74,38 @@
   }
 
   /* ── BACKGROUND LAYERS ─────────────────────────────────── */
-  #grid-canvas {
+  #grid-lines, #grid-canvas {
     position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: 1;
   }
 
+  #grid-canvas { visibility: hidden; } /* shown by JS only while squares are flipping */
+
+  /* Ambient green squares. JS shifts the container onto the grid origin and adds
+     short-lived .shimmer cells; their opacity fade runs on the compositor. */
+  #shimmers {
+    position: fixed;
+    top: 0; left: 0;
+    width: 0; height: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .shimmer {
+    position: absolute;
+    width: 40px; height: 40px;
+    opacity: 0;
+    background: radial-gradient(circle 32px at center, #00ff41, rgba(0,255,65,0));
+  }
+
+  /* Scanline layers are taller than the screen by a whole number of pattern
+     periods and slide via transform, so nothing repaints while they scroll.
+     (Was: animated background-position = full-screen repaint every frame.)
+     steps() keeps them on whole pixels so the lines stay crisp. */
   .scanlines {
     position: fixed;
-    inset: 0;
+    inset: -240px 0 0;
     background: repeating-linear-gradient(
       to bottom,
       transparent 0px,
@@ -93,14 +115,14 @@
     );
     pointer-events: none;
     z-index: 2;
-    animation: scanroll 8s linear infinite;
-    will-change: background-position;
+    animation: scanroll var(--scan-dur, 2s) steps(240) infinite; /* JS sets --scan-dur: one screen per 8s */
+    will-change: transform;
   }
-  @keyframes scanroll { to { background-position: 0 100vh; } }
+  @keyframes scanroll { to { transform: translate3d(0, 240px, 0); } }
 
   #text-scanlines {
     position: fixed;
-    inset: 0;
+    inset: -60px 0 0;
     pointer-events: none;
     z-index: 12;
     background: repeating-linear-gradient(
@@ -110,14 +132,14 @@
       rgba(0,0,0,0.45) 3px,
       rgba(0,0,0,0.45) 5px
     );
-    animation: scanshift 2s linear infinite;
-    will-change: background-position;
+    animation: scanshift 2s steps(60) infinite;
+    will-change: transform;
   }
-  @keyframes scanshift { to { background-position: 0 60px; } }
+  @keyframes scanshift { to { transform: translate3d(0, 60px, 0); } }
 
   .scanbeam {
     position: fixed;
-    left: 0; right: 0;
+    top: -10px; left: 0; right: 0;
     height: 3px;
     background: linear-gradient(to bottom,
       transparent,
@@ -127,12 +149,33 @@
     pointer-events: none;
     z-index: 3;
     animation: beam 4s linear infinite;
-    will-change: top;
+    will-change: transform;
   }
-  @keyframes beam {
-    from { top: -10px; }
-    to   { top: 100vh; }
+  /* Was: animated `top` = layout + paint every frame. */
+  @keyframes beam { to { transform: translate3d(0, calc(100vh + 10px), 0); } }
+
+  /* VHS bands: --y start, --h height, --o opacity, --d seconds per pass.
+     Was: full-screen canvas redrawn every frame. */
+  #bands {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 3;
   }
+  .band {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: calc(var(--h) * 100vh);
+    opacity: var(--o);
+    background: linear-gradient(to bottom,
+      rgba(0,255,65,0), #00ff41 30%, #00ff41 70%, rgba(0,255,65,0)
+    );
+    animation: band var(--d) linear infinite;
+    animation-delay: calc(var(--d) * var(--y) / -1.1);
+    will-change: transform;
+  }
+  @keyframes band { to { transform: translate3d(0, 110vh, 0); } }
 
   .vignette {
     position: fixed;
@@ -244,16 +287,7 @@
   }
 
   .wordmark-glitch { position: relative; overflow: visible; }
-  .wordmark-inner  { position: relative; animation: glitchcontainer 8s infinite; }
-
-  @keyframes glitchcontainer {
-    0%, 89%  { clip-path: none; transform: none; }
-    90%      { clip-path: inset(30% 0 55% 0); transform: translateX(-4px); }
-    90.5%    { clip-path: inset(60% 0 10% 0); transform: translateX(4px); }
-    91%      { clip-path: none; transform: none; }
-    95%      { clip-path: inset(45% 0 40% 0); transform: translateX(3px) scaleY(1.02); }
-    95.5%    { clip-path: none; transform: none; }
-  }
+  .wordmark-inner  { position: relative; isolation: isolate; } /* cut glitch: see runCutGlitch() */
 
   /* ── DIVIDER / TAGLINE / STATUS ────────────────────────── */
   .divider {
@@ -277,13 +311,23 @@
     height: 14px;
     border: 1px solid var(--green-dim);
     transform: rotate(45deg);
-    box-shadow: 0 0 6px var(--green);
+    position: relative;
+  }
+  /* Cross-fades two fixed shadows. Was: animated box-shadow = repaint every frame. */
+  .divider-icon::before,
+  .divider-icon::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
     animation: pulse 2s ease-in-out infinite;
   }
+  .divider-icon::before { box-shadow: 0 0 6px var(--green),  inset 0 0 4px rgba(0,255,65,0.2); }
+  .divider-icon::after  { box-shadow: 0 0 12px var(--green), inset 0 0 8px rgba(0,255,65,0.4);
+                          opacity: 0; animation-delay: -1s; }
 
   @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 6px var(--green),  inset 0 0 4px rgba(0,255,65,0.2); }
-    50%      { box-shadow: 0 0 12px var(--green), inset 0 0 8px rgba(0,255,65,0.4); }
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0; }
   }
 
   .tagline {
@@ -525,6 +569,10 @@
     /* translate3d → compositor-only updates (no layout/paint per move). */
     transform: translate3d(-999px, -999px, 0);
     will-change: transform;
+  }
+  /* On the child so the glow is baked into the layer instead of re-filtered every frame. */
+  #cursor-dot svg {
+    overflow: visible;
     filter:
       drop-shadow(0 0 3px rgba(0,255,65,0.95))
       drop-shadow(0 0 8px rgba(0,255,65,0.45));
@@ -537,6 +585,7 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.001s !important;
     }
+    #bands { display: none; }
   }
 </style>
 </head>
@@ -559,8 +608,16 @@
 </svg>
 
 <canvas id="reveal-canvas"></canvas>
+<canvas id="grid-lines"></canvas>
+<div id="shimmers"></div>
 <canvas id="grid-canvas"></canvas>
-<canvas id="band-canvas"></canvas>
+<div id="bands">
+  <div class="band" style="--y:0.05; --h:0.04;  --o:0.07; --d:102s"></div>
+  <div class="band" style="--y:0.28; --h:0.02;  --o:0.05; --d:153s"></div>
+  <div class="band" style="--y:0.55; --h:0.06;  --o:0.09; --d:83s"></div>
+  <div class="band" style="--y:0.72; --h:0.015; --o:0.04; --d:122s"></div>
+  <div class="band" style="--y:0.88; --h:0.03;  --o:0.06; --d:183s"></div>
+</div>
 
 <div class="scanlines"></div>
 <div id="text-scanlines"></div>
@@ -650,9 +707,6 @@
   // Was: two separate mousemove listeners, each recomputing center coords.
   const mouse = { x: -9999, y: -9999, nx: 0, ny: 0, dist: 0 };
 
-  // Page-visibility gate — halt rAF loops when the tab is hidden.
-  let pageVisible = !document.hidden;
-
   // ── REVEAL CANVAS (one-shot) ───────────────────────────────
   const rc = document.getElementById('reveal-canvas');
   const rctx = rc.getContext('2d');
@@ -736,16 +790,15 @@
     tsEl.textContent = `${h}:${m}:${s}.${ms}`;
   }
   tick();
-  setInterval(tick, 100);
 
   // ── DYNAMIC GRID ───────────────────────────────────────────
   const gc = document.getElementById('grid-canvas');
   const gctx = gc.getContext('2d');
   const CELL = 40;
 
-  // Cached static grid lines — drawn ONCE per resize, blitted via drawImage each frame.
-  // Was: rebuilding the entire grid path 60 times per second.
-  const gridBg = document.createElement('canvas');
+  // Static grid lines live on their own canvas and are drawn ONCE per resize.
+  // Was: re-blitted full-screen every frame.
+  const gridBg = document.getElementById('grid-lines');
   const gbctx = gridBg.getContext('2d');
 
   let gridOffX = 0, gridOffY = 0;
@@ -753,7 +806,8 @@
   let lastCellKey = null;
 
   const cellFlips   = new Map();
-  const cellShimmer = new Map();
+  const cellShimmer = new Set(); // keys of cells currently glowing
+  const shimmerRoot = document.getElementById('shimmers');
 
   function resizeGrid() {
     gc.width  = vw;
@@ -768,6 +822,8 @@
       gridOffX = r.left % CELL;
       gridOffY = r.top  % CELL;
     }
+    shimmerRoot.style.transform = `translate(${gridOffX}px, ${gridOffY}px)`;
+    document.documentElement.style.setProperty('--scan-dur', `${8 * 240 / vh}s`);
 
     // Pre-render the static grid into the offscreen canvas.
     gbctx.clearRect(0, 0, vw, vh);
@@ -786,7 +842,7 @@
     }
     gbctx.stroke();
 
-    requestGridFrame();
+    if (cellFlips.size) requestGridFrame();
   }
 
   function isBehindChannels(col, row) {
@@ -806,39 +862,32 @@
     requestGridFrame();
   }
 
-  // Self-parking grid loop: only schedules a frame when there's actual work to do.
-  // Was: rAF chain every frame regardless of whether anything changed.
+  // Self-parking flip loop: runs only while squares are flipping.
+  // (Shimmers used to live here too and kept it awake permanently.)
   let gridFrameId = 0;
   function requestGridFrame() {
-    if (gridFrameId || !pageVisible) return;
+    if (gridFrameId) return;
+    gc.style.visibility = 'visible';
     gridFrameId = requestAnimationFrame(drawGrid);
   }
 
   function drawGrid() {
     gridFrameId = 0;
-    gctx.clearRect(0, 0, vw, vh);
-    gctx.drawImage(gridBg, 0, 0); // single blit — cached static grid
 
-    // Shimmers
-    cellShimmer.forEach((s, key) => {
-      s.phase += s.dir * s.speed;
-      if (s.phase >= 1) { s.phase = 1; s.dir = -1; }
-      if (s.phase <= 0) { cellShimmer.delete(key); return; }
-      const a = s.phase * s.strength;
-      const x = s.col * CELL + gridOffX;
-      const y = s.row * CELL + gridOffY;
-      const grd = gctx.createRadialGradient(
-        x + CELL / 2, y + CELL / 2, 0,
-        x + CELL / 2, y + CELL / 2, CELL * 0.8
-      );
-      grd.addColorStop(0, `rgba(0,255,65,${a})`);
-      grd.addColorStop(1, 'rgba(0,255,65,0)');
-      gctx.fillStyle = grd;
-      gctx.fillRect(x, y, CELL, CELL);
+    // Erase only the cells that are flipping, not the whole screen.
+    cellFlips.forEach((s, key) => {
+      const x = Math.floor(s.col * CELL + gridOffX);
+      const y = Math.floor(s.row * CELL + gridOffY);
+      gctx.clearRect(x, y, CELL + 1, CELL + 1);
+      if (s.phase <= 0) cellFlips.delete(key);
     });
 
-    // Flips
-    cellFlips.forEach((s, key) => {
+    if (cellFlips.size === 0) {
+      gc.style.visibility = 'hidden'; // parked: skip blending an empty full-screen layer
+      return;
+    }
+
+    cellFlips.forEach((s) => {
       const x = s.col * CELL + gridOffX;
       const y = s.row * CELL + gridOffY;
       const scaleX = Math.abs(Math.cos(s.phase * Math.PI));
@@ -860,32 +909,34 @@
       }
 
       s.phase -= 0.018;
-      if (s.phase <= 0) cellFlips.delete(key);
     });
 
-    // Park if nothing's animating; the next interaction will wake us.
-    if (cellShimmer.size > 0 || cellFlips.size > 0) requestGridFrame();
+    requestGridFrame();
   }
 
-  // Ambient shimmer — schedules itself, but spawns wake the grid loop.
+  // Ambient shimmer — each square is one element with a compositor-run opacity fade.
+  // Was: ~20 radial gradients rebuilt on a full-screen canvas every frame.
+  // Fade lengths are the original per-frame speeds at 60fps, now the same on any display.
+  const SHIMMER_FPS = 60;
+  let shimmerTimer = 0;
   function scheduleShimmer() {
-    if (reducedMotion) return;
-    const cols = Math.ceil(vw / CELL);
-    const rows = Math.ceil(vh / CELL);
-    const col = Math.floor(Math.random() * cols);
-    const row = Math.floor(Math.random() * rows);
+    const col = Math.floor(Math.random() * Math.ceil(vw / CELL));
+    const row = Math.floor(Math.random() * Math.ceil(vh / CELL));
     const key = col + ',' + row;
     if (!cellShimmer.has(key) && !isBehindChannels(col, row)) {
-      cellShimmer.set(key, {
-        col, row, phase: 0, dir: 1,
-        strength: rand(0.04, 0.10),
-        speed: rand(0.003, 0.009)
-      });
-      requestGridFrame();
+      cellShimmer.add(key);
+      const el = document.createElement('div');
+      el.className = 'shimmer';
+      el.style.left = col * CELL + 'px';
+      el.style.top  = row * CELL + 'px';
+      shimmerRoot.appendChild(el);
+      el.animate(
+        { opacity: [0, rand(0.04, 0.10), 0] },
+        { duration: 2 / rand(0.003, 0.009) / SHIMMER_FPS * 1000 }
+      ).onfinish = () => { el.remove(); cellShimmer.delete(key); };
     }
-    setTimeout(scheduleShimmer, rand(200, 600));
+    shimmerTimer = setTimeout(scheduleShimmer, rand(200, 600));
   }
-  scheduleShimmer();
 
   // ── CYBERPUNK GLITCH ──────────────────────────────────────
   // PERF NOTE: The original implementation applied `filter: url(#warp)` driven by
@@ -924,8 +975,8 @@
     return `inset(${top}% 0 ${100 - bot}% 0)`;
   }
 
+  let glitchTimer = 0;
   function runGlitch() {
-    if (reducedMotion) return;
     // Clamp step interval to >=33ms (≈30fps). Was producing intervals as low as
     // ~22ms (200/9), guaranteeing missed frames during a burst.
     const duration = rand(220, 600);
@@ -983,9 +1034,24 @@
     }
     burstRaf = requestAnimationFrame(burstFrame);
 
-    setTimeout(runGlitch, rand(2500, 6000));
+    glitchTimer = setTimeout(runGlitch, rand(2500, 6000));
   }
-  setTimeout(runGlitch, 3000);
+
+  // Cut glitch: the active half-second of the old 8s CSS keyframes. clip-path can't run
+  // on the compositor, so as an endless CSS animation it kept the main thread awake
+  // for the ~7.5s of every cycle in which nothing moved.
+  const wordmarkInner = document.querySelector('.wordmark-inner');
+  const still = { clipPath: 'none', transform: 'none', easing: 'ease' };
+  const CUT_FRAMES = [
+    { ...still, offset: 0 },
+    { offset: 1   / 6.5, clipPath: 'inset(30% 0 55% 0)', transform: 'translateX(-4px)', easing: 'ease' },
+    { offset: 1.5 / 6.5, clipPath: 'inset(60% 0 10% 0)', transform: 'translateX(4px)',  easing: 'ease' },
+    { ...still, offset: 2 / 6.5 },
+    { offset: 6   / 6.5, clipPath: 'inset(45% 0 40% 0)', transform: 'translateX(3px) scaleY(1.02)', easing: 'ease' },
+    { ...still, offset: 1 }
+  ];
+  let cutTimer = 0;
+  function runCutGlitch() { wordmarkInner.animate(CUT_FRAMES, 520); }
 
   // ── TEXT TILT ─────────────────────────────────────────────
   // Note: original file ALSO had `animateTilt` for the whole .logo-wrap that was
@@ -995,8 +1061,14 @@
   let tiltRX = 0, tiltRY = 0, tiltAngle = 0;
   let lastTiltTransform = '';
 
+  // Parks once the tilt has caught up with the mouse. Was: ran every frame forever.
+  let tiltRaf = 0;
+  function requestTilt() {
+    if (!tiltRaf && !reducedMotion) tiltRaf = requestAnimationFrame(animateText);
+  }
+
   function animateText() {
-    if (!pageVisible) return; // restarts on visibilitychange
+    tiltRaf = 0;
     const tx =  mouse.ny;
     const ty = -mouse.nx;
     const td = mouse.dist * -MAX_TEXT_TILT;
@@ -1004,6 +1076,9 @@
     tiltRX    += (tx - tiltRX)    * 0.08;
     tiltRY    += (ty - tiltRY)    * 0.08;
     tiltAngle += (td - tiltAngle) * 0.08;
+
+    const settled = Math.abs(tx - tiltRX) < 0.0005 && Math.abs(ty - tiltRY) < 0.0005 &&
+                    Math.abs(td - tiltAngle) < 0.005;
 
     let next;
     if (Math.abs(tiltAngle) < 0.05) {
@@ -1017,41 +1092,7 @@
       wordmarkWrap.style.transform = next;
       lastTiltTransform = next;
     }
-    requestAnimationFrame(animateText);
-  }
-
-  // ── VHS BANDS ─────────────────────────────────────────────
-  const bandCanvas = document.getElementById('band-canvas');
-  bandCanvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:3;';
-  const bctx = bandCanvas.getContext('2d');
-
-  const vhsBands = [
-    { y: 0.05, h: 0.04,  opacity: 0.07, speed: 0.00018 },
-    { y: 0.28, h: 0.02,  opacity: 0.05, speed: 0.00012 },
-    { y: 0.55, h: 0.06,  opacity: 0.09, speed: 0.00022 },
-    { y: 0.72, h: 0.015, opacity: 0.04, speed: 0.00015 },
-    { y: 0.88, h: 0.03,  opacity: 0.06, speed: 0.00010 }
-  ];
-
-  function resizeBands() { bandCanvas.width = vw; bandCanvas.height = vh; }
-
-  function drawBands() {
-    if (!pageVisible) return; // restarts on visibilitychange
-    bctx.clearRect(0, 0, vw, vh);
-    for (let i = 0; i < vhsBands.length; i++) {
-      const b = vhsBands[i];
-      b.y = (b.y + b.speed) % 1.1;
-      const y  = b.y * vh;
-      const bh = b.h * vh;
-      const grd = bctx.createLinearGradient(0, y, 0, y + bh);
-      grd.addColorStop(0,   'rgba(0,255,65,0)');
-      grd.addColorStop(0.3, `rgba(0,255,65,${b.opacity})`);
-      grd.addColorStop(0.7, `rgba(0,255,65,${b.opacity})`);
-      grd.addColorStop(1,   'rgba(0,255,65,0)');
-      bctx.fillStyle = grd;
-      bctx.fillRect(0, y, vw, bh);
-    }
-    requestAnimationFrame(drawBands);
+    if (!settled) requestTilt();
   }
 
   // ── UNIFIED LISTENERS ─────────────────────────────────────
@@ -1063,6 +1104,7 @@
     mouse.ny = (e.clientY - vcy) / vcy;
     const d = Math.hypot(mouse.nx, mouse.ny);
     mouse.dist = d > 1 ? 1 : d;
+    requestTilt();
 
     // Per-cell hover flip
     const col = Math.floor((mouse.x - gridOffX) / CELL);
@@ -1078,6 +1120,7 @@
     mouse.x = -9999; mouse.y = -9999;
     mouse.nx = 0; mouse.ny = 0; mouse.dist = 0;
     lastCellKey = null;
+    requestTilt();
   }, { passive: true });
 
   // Click ripple — same logic as before, single setTimeout chain.
@@ -1118,32 +1161,38 @@
       vcy = vh / 2;
       if (rc.isConnected) { rc.width = vw; rc.height = vh; }
       resizeGrid();
-      resizeBands();
     });
   }, { passive: true });
 
   // ── VISIBILITY GATE ───────────────────────────────────────
-  // Halt heavy loops when the tab is hidden; resume on focus.
+  // All timers stop while the tab is hidden. rAF and CSS animations pause by themselves:
+  // a pending rAF callback survives hiding, so restarting a loop here would run it twice
+  // (the old version gained an extra copy of every loop per tab switch).
+  let tickTimer = 0;
+  function startTimers(glitchDelay) {
+    stopTimers();
+    tick();
+    tickTimer = setInterval(tick, 100);
+    if (reducedMotion) return;
+    scheduleShimmer();
+    glitchTimer = setTimeout(runGlitch, glitchDelay);
+    cutTimer = setInterval(runCutGlitch, 8000);
+  }
+  function stopTimers() {
+    clearInterval(tickTimer);
+    clearInterval(cutTimer);
+    clearTimeout(shimmerTimer);
+    clearTimeout(glitchTimer);
+  }
   document.addEventListener('visibilitychange', () => {
-    const wasHidden = !pageVisible;
-    pageVisible = !document.hidden;
-    if (pageVisible && wasHidden) {
-      requestGridFrame();
-      if (!reducedMotion) {
-        requestAnimationFrame(drawBands);
-        requestAnimationFrame(animateText);
-      }
-    }
+    if (document.hidden) stopTimers();
+    else startTimers(rand(2500, 6000));
   });
 
   // ── BOOT ──────────────────────────────────────────────────
-  resizeBands();
   resizeGrid();
   setTimeout(resizeGrid, 1500); // re-align after intro animations settle
-  if (!reducedMotion) {
-    requestAnimationFrame(drawBands);
-    requestAnimationFrame(animateText);
-  }
+  if (!document.hidden) startTimers(3000);
 
   // ── CURSOR DOT ────────────────────────────────────────────
   const dot = document.getElementById('cursor-dot');
