@@ -634,8 +634,9 @@
       .game-time { font-size: 0.48rem; letter-spacing: 0; }
     }
   }
-  /* "Postponed" is the widest word in the table. */
+  /* Smallest phones: room for 100 wins and for "Postponed", the widest word. */
   @container (max-width: 272px) {
+    .standings-table th, .standings-table td { padding-left: 0.2rem; padding-right: 0.2rem; }
     .game-off { font-size: 0.42rem; letter-spacing: 0; }
   }
 
